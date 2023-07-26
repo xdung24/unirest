@@ -6,20 +6,20 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
-	pg_insertQuery        = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
-	pg_tablesQuery        = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
-	pg_getQuery           = "SELECT data FROM %v WHERE id = $1"
-	pg_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
-	pg_deleteQuery        = "DELETE FROM %v WHERE id = $1"
-	pg_dropNamespaceQuery = "DROP TABLE %v"
-	pg_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
+	mysql_insertQuery        = "INSERT INTO %v (id, data) VALUES(?, ?) ON DUPLICATE KEY UPDATE data = ?"
+	mysql_tablesQuery        = "SELECT table_name FROM information_schema.tables WHERE table_schema = '%v'"
+	mysql_getQuery           = "SELECT data FROM %v WHERE id = ?"
+	mysql_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
+	mysql_deleteQuery        = "DELETE FROM %v WHERE id = ?"
+	mysql_dropNamespaceQuery = "DROP TABLE %v"
+	mysql_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
 )
 
-type PGDatabase struct {
+type MySqlDatabase struct {
 	Host string
 	User string
 	Pass string
@@ -28,12 +28,13 @@ type PGDatabase struct {
 	db *sql.DB
 }
 
-func (p *PGDatabase) Init() {
-	connInfo := fmt.Sprintf("postgres://%v:%v@%v/%v?sslmode=disable", p.User, p.Pass, p.Host, p.Name)
-	db, err := sql.Open("postgres", connInfo)
+func (p *MySqlDatabase) Init() {
+	connInfo := fmt.Sprintf("%v:%v@tcp(%v)/%v", p.User, p.Pass, p.Host, p.Name)
+	db, err := sql.Open("mysql", connInfo)
 
 	if err != nil {
-		log.Fatalf("error connecting to postgres: %v", err)
+		log.Println(connInfo)
+		log.Fatalf("error connecting to mysql: %v", err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(100)
@@ -42,7 +43,7 @@ func (p *PGDatabase) Init() {
 	p.db = db
 }
 
-func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbError {
 	err := p.ensureNamespace(namespace)
 
 	if err != nil {
@@ -51,7 +52,7 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError 
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.Exec(fmt.Sprintf(pg_insertQuery, namespace), key, string(value))
+	_, dbErr := p.db.Exec(fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -61,8 +62,8 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError 
 	return nil
 }
 
-func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	rows, dbErr := p.db.Query(fmt.Sprintf(pg_getQuery, namespace), key)
+func (p MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+	rows, dbErr := p.db.Query(fmt.Sprintf(mysql_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -87,8 +88,8 @@ func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	}
 }
 
-func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
-	sqlStatement := fmt.Sprintf(pg_getAllQuery, namespace)
+func (p MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+	sqlStatement := fmt.Sprintf(mysql_getAllQuery, namespace)
 	rows, dbErr := p.db.Query(sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
@@ -114,9 +115,11 @@ func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (p PGDatabase) Delete(namespace string, key string) *DbError {
-	_, err := p.db.Exec(fmt.Sprintf(pg_deleteQuery, namespace), key)
+func (p MySqlDatabase) Delete(namespace string, key string) *DbError {
+	sqlStatement := fmt.Sprintf(mysql_deleteQuery, namespace)
+	_, err := p.db.Exec(sqlStatement, key)
 	if err != nil {
+		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on Delete: %v", err)
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -126,10 +129,11 @@ func (p PGDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (p PGDatabase) DeleteAll(namespace string) *DbError {
-	sqlStatement := fmt.Sprintf(pg_dropNamespaceQuery, namespace)
+func (p MySqlDatabase) DeleteAll(namespace string) *DbError {
+	sqlStatement := fmt.Sprintf(mysql_dropNamespaceQuery, namespace)
 	_, err := p.db.Exec(sqlStatement)
 	if err != nil {
+		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -139,8 +143,9 @@ func (p PGDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (p PGDatabase) GetNamespaces() []string {
-	rows, err := p.db.Query(pg_tablesQuery)
+func (p MySqlDatabase) GetNamespaces() []string {
+	sqlStatement := fmt.Sprintf(mysql_tablesQuery, p.Name)
+	rows, err := p.db.Query(sqlStatement)
 	if err != nil {
 		log.Printf("error on GetNamespaces: %v\n", err)
 	}
@@ -151,6 +156,7 @@ func (p PGDatabase) GetNamespaces() []string {
 		var tableName string
 		err = rows.Scan(&tableName)
 		if err != nil {
+			log.Println(sqlStatement)
 			log.Printf("error on Scan: %v\n", err)
 		}
 		ret = append(ret, tableName)
@@ -158,11 +164,12 @@ func (p PGDatabase) GetNamespaces() []string {
 	return ret
 }
 
-func (p PGDatabase) ensureNamespace(namespace string) (err error) {
-	query := fmt.Sprintf(pg_createTableQuery, namespace)
+func (p MySqlDatabase) ensureNamespace(namespace string) (err error) {
+	query := fmt.Sprintf(mysql_createTableQuery, namespace)
 	_, err = p.db.Exec(query)
 
 	if err != nil {
+		log.Println(query)
 		log.Printf("error creating table: %v\n", err)
 	}
 

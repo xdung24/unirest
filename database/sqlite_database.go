@@ -17,6 +17,7 @@ const (
 	sqlite_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
 	sqlite_deleteQuery        = "DELETE FROM %v WHERE id = $1"
 	sqlite_dropNamespaceQuery = "DROP TABLE %v"
+	sqlite_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v ( id string PRIMARY KEY, data string NOT NULL)"
 )
 
 type SQLiteDatabase struct {
@@ -149,7 +150,7 @@ func (p SQLiteDatabase) GetNamespaces() []string {
 }
 
 func (p SQLiteDatabase) ensureNamespace(namespace string) (err error) {
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %v ( id string PRIMARY KEY, data string NOT NULL)", namespace)
+	query := fmt.Sprintf(sqlite_createTableQuery, namespace)
 	_, err = p.db.Exec(query)
 
 	if err != nil {

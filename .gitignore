@@ -2,3 +2,5 @@ run*
 caffeine
 .idea
 /certs/*
+data/*
+test/*

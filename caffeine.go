@@ -24,29 +24,35 @@ const (
 
 	MEMORY = "memory"
 	PG     = "postgres"
+	MYSQL  = "mysql"
 	FS     = "fs"
 	SQLITE = "sqlite"
 
 	// env
-	envHostPort    = "IP_PORT"
-	envDbType      = "DB_TYPE"
-	envPgHost      = "PG_HOST"
-	envPgUser      = "PG_USER"
-	envPgPass      = "PG_PASS"
-	envDbPath      = "DB_PATH"
-	envAuthEnabled = "AUTH_ENABLED"
+	envHostPort      = "IP_PORT"
+	envDbType        = "DB_TYPE"
+	envDbHost        = "DB_HOST"
+	envDbName        = "DB_NAME"
+	envDbUser        = "DB_USER"
+	envDbPass        = "DB_PASS"
+	envDbPath        = "DB_PATH"
+	envAuthEnabled   = "AUTH_ENABLED"
+	envRawSqlEnabled = "RAW_SQL_ENABLED"
 )
 
 func main() {
-	var addr, dbType, pgHost, pgUser, pgPass, dbPath string
-	var authEnabled bool
+	var addr, dbType, dbHost, dbName, dbUser, dbPass, dbPath string
+	var authEnabled, rawSqlEnabled bool
+
 	flag.StringVar(&addr, envHostPort, ":8000", "ip:port to expose")
-	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | postgres | fs")
-	flag.StringVar(&pgHost, envPgHost, "0.0.0.0", "postgres host (port is 5432)")
-	flag.StringVar(&pgUser, envPgUser, "", "postgres user")
-	flag.StringVar(&pgPass, envPgPass, "", "postgres password")
-	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage root or sqlite")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
+	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable Raw Sql Endpoint (for postgres or mysql)")
+	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql")
+	flag.StringVar(&dbHost, envDbHost, "0.0.0.0", "database host (for postgres or mysql)")
+	flag.StringVar(&dbName, envDbName, "", "database name (for postgres or mysql)")
+	flag.StringVar(&dbUser, envDbUser, "", "database user (for postgres or mysql)")
+	flag.StringVar(&dbPass, envDbPass, "", "database password (for postgres or mysql)")
+	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage (for fs or sqlite)")
 	flag.Parse()
 
 	server := service.Server{
@@ -58,12 +64,6 @@ func main() {
 	switch dbType {
 	case MEMORY:
 		db = &database.MemDatabase{}
-	case PG:
-		db = &database.PGDatabase{
-			Host: pgHost,
-			User: pgUser,
-			Pass: pgPass,
-		}
 	case FS:
 		db = &database.StorageDatabase{
 			RootDirPath: dbPath,
@@ -72,7 +72,24 @@ func main() {
 		db = &database.SQLiteDatabase{
 			DirPath: dbPath,
 		}
+	case PG:
+		db = &database.PGDatabase{
+			Host: dbHost,
+			Name: dbName,
+			User: dbUser,
+			Pass: dbPass,
+		}
+	case MYSQL:
+		db = &database.MySqlDatabase{
+			Host: dbHost,
+			Name: dbName,
+			User: dbUser,
+			Pass: dbPass,
+		}
 	}
+
+	log.Println("DB Mode: " + dbType)
+
 	go server.Init(db)
 
 	log.Println(projectName, " version: ", projectVersion)

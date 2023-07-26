@@ -58,6 +58,38 @@ retrieve later with:
 {"name":"jack","age":25}
 ```
 
+## Sample startup
+
+```sh
+# mem
+./caffeine --DB_TYPE=memory
+```
+
+```sh
+# file system
+./caffeine --DB_TYPE=fs
+```
+
+```sh
+# sqlite
+./caffeine --DB_TYPE=sqlite --DB_PATH=/Users/vdv/repositories/caffeine/data/
+```
+
+```sh
+# postgres
+./caffeine --DB_TYPE=postgres --DB_HOST=127.0.0.1 --DB_NAME=postgres --DB_USER=postgres --DB_PASS=postgres
+```
+
+```sh
+# mysql/mariadb
+./caffeine --DB_TYPE=mysql --DB_HOST=localhost --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet
+```
+
+```sh
+# ren load test
+k6 run ./tests/get-user-1.js
+```
+
 ## All operations
 
 Insert/update
