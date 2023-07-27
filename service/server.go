@@ -352,6 +352,7 @@ func (s *Server) openAPIHandler(w http.ResponseWriter, r *http.Request) {
 	rootMap, err := s.generateOpenAPIMap(namespaces)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	switch r.Method {
@@ -359,6 +360,7 @@ func (s *Server) openAPIHandler(w http.ResponseWriter, r *http.Request) {
 		output, err := json.MarshalIndent(rootMap, "", "  ")
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		output = append(output, '\n')
 
