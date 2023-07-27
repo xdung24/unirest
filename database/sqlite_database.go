@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -33,6 +34,8 @@ func (p *SQLiteDatabase) Init() {
 }
 
 func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	err := p.ensureNamespace(namespace)
 
 	if err != nil {
@@ -41,7 +44,7 @@ func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.Exec(fmt.Sprintf(sqlite_insertQuery, namespace), key, string(value))
+	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(sqlite_insertQuery, namespace), key, string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -52,7 +55,9 @@ func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 }
 
 func (p SQLiteDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	rows, dbErr := p.db.Query(fmt.Sprintf(sqlite_getQuery, namespace), key)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(sqlite_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -78,8 +83,10 @@ func (p SQLiteDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 }
 
 func (p SQLiteDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(sqlite_getAllQuery, namespace)
-	rows, dbErr := p.db.Query(sqlStatement)
+	rows, dbErr := p.db.QueryContext(ctx, sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -105,7 +112,9 @@ func (p SQLiteDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 }
 
 func (p SQLiteDatabase) Delete(namespace string, key string) *DbError {
-	_, err := p.db.Exec(fmt.Sprintf(sqlite_deleteQuery, namespace), key)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	_, err := p.db.ExecContext(ctx, fmt.Sprintf(sqlite_deleteQuery, namespace), key)
 	if err != nil {
 		message := fmt.Sprintf("error on Delete: %v", err)
 		return &DbError{
@@ -117,8 +126,10 @@ func (p SQLiteDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (p SQLiteDatabase) DeleteAll(namespace string) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(sqlite_dropNamespaceQuery, namespace)
-	_, err := p.db.Exec(sqlStatement)
+	_, err := p.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
 		return &DbError{
@@ -130,7 +141,9 @@ func (p SQLiteDatabase) DeleteAll(namespace string) *DbError {
 }
 
 func (p SQLiteDatabase) GetNamespaces() []string {
-	rows, err := p.db.Query(sqlite_tablesQuery)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	rows, err := p.db.QueryContext(ctx, sqlite_tablesQuery)
 	if err != nil {
 		log.Printf("error on GetNamespaces: %v\n", err)
 	}
@@ -149,8 +162,10 @@ func (p SQLiteDatabase) GetNamespaces() []string {
 }
 
 func (p SQLiteDatabase) ensureNamespace(namespace string) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	query := fmt.Sprintf(sqlite_createTableQuery, namespace)
-	_, err = p.db.Exec(query)
+	_, err = p.db.ExecContext(ctx, query)
 
 	if err != nil {
 		log.Printf("error creating table: %v\n", err)

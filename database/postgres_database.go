@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -17,6 +18,7 @@ const (
 	pg_deleteQuery        = "DELETE FROM %v WHERE id = $1"
 	pg_dropNamespaceQuery = "DROP TABLE %v"
 	pg_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
+	pg_dbTimeout          = 10 * time.Second
 )
 
 type PGDatabase struct {
@@ -31,10 +33,10 @@ type PGDatabase struct {
 func (p *PGDatabase) Init() {
 	connInfo := fmt.Sprintf("postgres://%v:%v@%v/%v?sslmode=disable", p.User, p.Pass, p.Host, p.Name)
 	db, err := sql.Open("postgres", connInfo)
-
 	if err != nil {
 		log.Fatalf("error connecting to postgres: %v", err)
 	}
+
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(100)
 	db.SetMaxIdleConns(10)
@@ -43,6 +45,8 @@ func (p *PGDatabase) Init() {
 }
 
 func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	err := p.ensureNamespace(namespace)
 
 	if err != nil {
@@ -51,7 +55,7 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError 
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.Exec(fmt.Sprintf(pg_insertQuery, namespace), key, string(value))
+	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(pg_insertQuery, namespace), key, string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -62,7 +66,9 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError 
 }
 
 func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	rows, dbErr := p.db.Query(fmt.Sprintf(pg_getQuery, namespace), key)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(pg_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -88,8 +94,10 @@ func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 }
 
 func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(pg_getAllQuery, namespace)
-	rows, dbErr := p.db.Query(sqlStatement)
+	rows, dbErr := p.db.QueryContext(ctx, sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -115,7 +123,9 @@ func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 }
 
 func (p PGDatabase) Delete(namespace string, key string) *DbError {
-	_, err := p.db.Exec(fmt.Sprintf(pg_deleteQuery, namespace), key)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	_, err := p.db.ExecContext(ctx, fmt.Sprintf(pg_deleteQuery, namespace), key)
 	if err != nil {
 		message := fmt.Sprintf("error on Delete: %v", err)
 		return &DbError{
@@ -127,8 +137,10 @@ func (p PGDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (p PGDatabase) DeleteAll(namespace string) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(pg_dropNamespaceQuery, namespace)
-	_, err := p.db.Exec(sqlStatement)
+	_, err := p.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
 		return &DbError{
@@ -140,7 +152,9 @@ func (p PGDatabase) DeleteAll(namespace string) *DbError {
 }
 
 func (p PGDatabase) GetNamespaces() []string {
-	rows, err := p.db.Query(pg_tablesQuery)
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	rows, err := p.db.QueryContext(ctx, pg_tablesQuery)
 	if err != nil {
 		log.Printf("error on GetNamespaces: %v\n", err)
 	}
@@ -159,8 +173,10 @@ func (p PGDatabase) GetNamespaces() []string {
 }
 
 func (p PGDatabase) ensureNamespace(namespace string) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
 	query := fmt.Sprintf(pg_createTableQuery, namespace)
-	_, err = p.db.Exec(query)
+	_, err = p.db.ExecContext(ctx, query)
 
 	if err != nil {
 		log.Printf("error creating table: %v\n", err)

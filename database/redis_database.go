@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	redis "github.com/redis/go-redis/v9"
 )
 
 const (
-	namespace_prefix = "caffein_"
-	schema_suffix    = "_schema"
+	redis_namespace_prefix = "caffein_"
+	redis_schema_suffix    = "_schema"
+	redis_dbTimeout        = 10 * time.Second
 )
 
 type RedisDatabase struct {
@@ -20,9 +22,9 @@ type RedisDatabase struct {
 	db *redis.Client
 }
 
-var ctx = context.Background()
-
 func (p *RedisDatabase) Init() {
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     p.Host,
 		Password: "", // no password set
@@ -39,7 +41,9 @@ func (p *RedisDatabase) Init() {
 }
 
 func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbError {
-	_, err := p.db.HSet(ctx, namespace_prefix+namespace, key, string(value)).Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	_, err := p.db.HSet(ctx, redis_namespace_prefix+namespace, key, string(value)).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -50,7 +54,9 @@ func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 }
 
 func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	val, err := p.db.HGet(ctx, namespace_prefix+namespace, key).Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	val, err := p.db.HGet(ctx, redis_namespace_prefix+namespace, key).Result()
 	if err == redis.Nil {
 		return nil, &DbError{
 			ErrorCode: ID_NOT_FOUND,
@@ -68,7 +74,9 @@ func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 }
 
 func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
-	val, err := p.db.HGetAll(ctx, namespace_prefix+namespace).Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	val, err := p.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
 	if err != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -86,7 +94,9 @@ func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 }
 
 func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
-	_, err := p.db.HDel(ctx, namespace_prefix+namespace, key).Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	_, err := p.db.HDel(ctx, redis_namespace_prefix+namespace, key).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -97,7 +107,9 @@ func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
-	val, err := p.db.HGetAll(ctx, namespace_prefix+namespace).Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	val, err := p.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -105,7 +117,7 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 		}
 	}
 	for i := range val {
-		_, err := p.db.HDel(ctx, namespace_prefix+namespace, i).Result()
+		_, err := p.db.HDel(ctx, redis_namespace_prefix+namespace, i).Result()
 		if err != nil {
 			return &DbError{
 				ErrorCode: INTERNAL_ERROR,
@@ -117,14 +129,16 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 }
 
 func (p *RedisDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
 	var ret = []string{}
-	val, _, err := p.db.Scan(ctx, 0, namespace_prefix+"*", 0).Result()
+	val, _, err := p.db.Scan(ctx, 0, redis_namespace_prefix+"*", 0).Result()
 	if err != nil {
 		return ret
 	}
 	for _, v := range val {
-		if !strings.HasSuffix(v, schema_suffix) {
-			ret = append(ret, strings.Replace(v, namespace_prefix, "", 1))
+		if !strings.HasSuffix(v, redis_schema_suffix) {
+			ret = append(ret, strings.Replace(v, redis_namespace_prefix, "", 1))
 		}
 	}
 	return ret

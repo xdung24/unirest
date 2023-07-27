@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -17,6 +18,7 @@ const (
 	mysql_deleteQuery        = "DELETE FROM %v WHERE id = ?"
 	mysql_dropNamespaceQuery = "DROP TABLE %v"
 	mysql_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
+	mysql_dbTimeout          = 10 * time.Second
 )
 
 type MySqlDatabase struct {
@@ -44,6 +46,8 @@ func (p *MySqlDatabase) Init() {
 }
 
 func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	err := p.ensureNamespace(namespace)
 
 	if err != nil {
@@ -52,7 +56,7 @@ func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbErr
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.Exec(fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
+	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -63,7 +67,9 @@ func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbErr
 }
 
 func (p MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	rows, dbErr := p.db.Query(fmt.Sprintf(mysql_getQuery, namespace), key)
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
+	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(mysql_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -89,8 +95,10 @@ func (p MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 }
 
 func (p MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_getAllQuery, namespace)
-	rows, dbErr := p.db.Query(sqlStatement)
+	rows, dbErr := p.db.QueryContext(ctx, sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -116,8 +124,10 @@ func (p MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 }
 
 func (p MySqlDatabase) Delete(namespace string, key string) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_deleteQuery, namespace)
-	_, err := p.db.Exec(sqlStatement, key)
+	_, err := p.db.ExecContext(ctx, sqlStatement, key)
 	if err != nil {
 		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on Delete: %v", err)
@@ -130,8 +140,10 @@ func (p MySqlDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (p MySqlDatabase) DeleteAll(namespace string) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_dropNamespaceQuery, namespace)
-	_, err := p.db.Exec(sqlStatement)
+	_, err := p.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
@@ -144,8 +156,10 @@ func (p MySqlDatabase) DeleteAll(namespace string) *DbError {
 }
 
 func (p MySqlDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_tablesQuery, p.Name)
-	rows, err := p.db.Query(sqlStatement)
+	rows, err := p.db.QueryContext(ctx, sqlStatement)
 	if err != nil {
 		log.Printf("error on GetNamespaces: %v\n", err)
 	}
@@ -165,8 +179,10 @@ func (p MySqlDatabase) GetNamespaces() []string {
 }
 
 func (p MySqlDatabase) ensureNamespace(namespace string) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
 	query := fmt.Sprintf(mysql_createTableQuery, namespace)
-	_, err = p.db.Exec(query)
+	_, err = p.db.ExecContext(ctx, query)
 
 	if err != nil {
 		log.Println(query)
