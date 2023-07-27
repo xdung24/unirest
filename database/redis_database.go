@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	ns_prefix = "caffein_"
+	namespace_prefix = "caffein_"
+	schema_suffix    = "_schema"
 )
 
 type RedisDatabase struct {
@@ -38,7 +39,7 @@ func (p *RedisDatabase) Init() {
 }
 
 func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbError {
-	_, err := p.db.HSet(ctx, ns_prefix+namespace, key, string(value)).Result()
+	_, err := p.db.HSet(ctx, namespace_prefix+namespace, key, string(value)).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -49,7 +50,7 @@ func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 }
 
 func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	val, err := p.db.HGet(ctx, ns_prefix+namespace, key).Result()
+	val, err := p.db.HGet(ctx, namespace_prefix+namespace, key).Result()
 	if err == redis.Nil {
 		return nil, &DbError{
 			ErrorCode: ID_NOT_FOUND,
@@ -67,7 +68,7 @@ func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 }
 
 func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
-	val, err := p.db.HGetAll(ctx, ns_prefix+namespace).Result()
+	val, err := p.db.HGetAll(ctx, namespace_prefix+namespace).Result()
 	if err != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -85,7 +86,7 @@ func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 }
 
 func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
-	_, err := p.db.HDel(ctx, ns_prefix+namespace, key).Result()
+	_, err := p.db.HDel(ctx, namespace_prefix+namespace, key).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -96,7 +97,7 @@ func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
-	val, err := p.db.HGetAll(ctx, ns_prefix+namespace).Result()
+	val, err := p.db.HGetAll(ctx, namespace_prefix+namespace).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -104,7 +105,7 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 		}
 	}
 	for i := range val {
-		_, err := p.db.HDel(ctx, ns_prefix+namespace, i).Result()
+		_, err := p.db.HDel(ctx, namespace_prefix+namespace, i).Result()
 		if err != nil {
 			return &DbError{
 				ErrorCode: INTERNAL_ERROR,
@@ -117,12 +118,14 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 
 func (p *RedisDatabase) GetNamespaces() []string {
 	var ret = []string{}
-	val, err := p.db.Keys(ctx, ns_prefix+"*").Result()
+	val, _, err := p.db.Scan(ctx, 0, namespace_prefix+"*", 0).Result()
 	if err != nil {
 		return ret
 	}
 	for _, v := range val {
-		ret = append(ret, strings.Replace(v, ns_prefix, "", 1))
+		if !strings.HasSuffix(v, schema_suffix) {
+			ret = append(ret, strings.Replace(v, namespace_prefix, "", 1))
+		}
 	}
 	return ret
 }
