@@ -14,6 +14,7 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.3 // indirect
+	github.com/redis/go-redis/v9 v9.0.5
 	github.com/rs/cors v1.8.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/testcontainers/testcontainers-go v0.12.0

@@ -1,7 +1,9 @@
 # caffeine - minimum viable backend
+
 A very basic REST service for JSON data - enough for prototyping and MVPs!
 
 **Features**:
+
 - no need to set up a database, all data is managed automagically*
 - REST paradigm CRUD for multiple entities/namespaces
 - JWT authentication
@@ -13,25 +15,25 @@ A very basic REST service for JSON data - enough for prototyping and MVPs!
 - easy to deploy as container
 
 **Currently supports**:
-  - in memory database (map)
-  - sqlite
-  - postgres
-  - filesystem storage
+
+- in memory database (map)
+- sqlite
+- postgres
+- filesystem storage
 
 For a sample Vue app using caffeine see: https://gist.github.com/calogxro/6e601e07c2a937df4418d104fb717570
-
-
 
 ## How to
 
 Simply start the server with:
 
-```go 
+```go
 go run caffeine.go
 ```
+
 optional params are:
 
-```
+```yaml
 Usage of caffeine:
   -AUTH_ENABLED=false: enable JWT auth
   -DB_TYPE="memory": db type to use, options: memory | postgres | fs | sqlite
@@ -61,55 +63,59 @@ retrieve later with:
 ## Sample startup
 
 ```sh
-# mem
+# memory
 ./caffeine --DB_TYPE=memory
 ```
 
 ```sh
 # file system
-./caffeine --DB_TYPE=fs
+./caffeine --DB_TYPE=fs --DB_PATH=./data/
 ```
 
 ```sh
 # sqlite
-./caffeine --DB_TYPE=sqlite --DB_PATH=/Users/vdv/repositories/caffeine/data/
+./caffeine --DB_TYPE=sqlite --DB_PATH=./data/db.sqlite
+```
+
+```sh
+# redis
+./caffeine --DB_TYPE=redis --DB_HOST=localhost:6379
 ```
 
 ```sh
 # postgres
-./caffeine --DB_TYPE=postgres --DB_HOST=127.0.0.1 --DB_NAME=postgres --DB_USER=postgres --DB_PASS=postgres
+./caffeine --DB_TYPE=postgres --DB_HOST=localhost:5432 --DB_NAME=nettruyen --DB_USER=postgres --DB_PASS=postgres
 ```
 
 ```sh
 # mysql/mariadb
-./caffeine --DB_TYPE=mysql --DB_HOST=localhost --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet
-```
-
-```sh
-# ren load test
-k6 run ./tests/get-user-1.js
+./caffeine --DB_TYPE=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet
 ```
 
 ## All operations
 
 Insert/update
+
 ```sh
 > curl -X POST -d '{"name":"jack","age":25}'  http://localhost:8000/ns/users/1
 {"name":"jack","age":25}
 ```
 
 Delete
+
 ```sh
 > curl -X DELETE http://localhost:8000/ns/users/1
 ```
 
 Get by ID
+
 ```sh
 > curl http://localhost:8000/ns/users/1
 {"name":"jack","age":25}
 ```
 
 Get all values for a namespace
+
 ```sh
 > curl http://localhost:8000/ns/users | jq 
 [
@@ -131,18 +137,21 @@ Get all values for a namespace
 ```
 
 Get all namespaces
+
 ```sh
 > curl http://localhost:8000/ns
 ["users"]
 ```
 
 Delete a namespace
+
 ```sh
 > curl -X DELETE http://localhost:8000/ns/users
 {}
 ```
 
 Search by property (jq syntax)
+
 ```sh
 > curl http://localhost:8000/search/users?filter="select(.name==\"jack\")"  | jq
 {
@@ -158,7 +167,14 @@ Search by property (jq syntax)
 }
 ```
 
-## JWT Authentication 
+## Sample load tests
+
+```sh
+# ren load test
+k6 run ./tests/get-user-1.js
+```
+
+## JWT Authentication
 
 There's a first implementation of JWT authentication. See [documentation about JWT](JWT.md)
 
@@ -186,6 +202,7 @@ After you add some data, you can generate the specs with:
 ```sh
 curl -X GET http://localhost:8000/openapi.json
 ```
+
 or you can just go to http://localhost:8000/swaggerui/ and use it interactively!
 
 ## Schema Validation
@@ -200,13 +217,14 @@ curl --data-binary @./schema_sample/user_schema.json http://localhost:8000/schem
 
 Now only validated "users" will be accepted (see user.json and invalid_user.json under schema_sample/)
 
-
 ## Run as container
 
 ```sh
 docker build -t caffeine .
 ```
+
 and then run it:
+
 ```sh
 docker run --publish 8000:8000 caffeine
 ```

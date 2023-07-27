@@ -27,6 +27,7 @@ const (
 	MYSQL  = "mysql"
 	FS     = "fs"
 	SQLITE = "sqlite"
+	REDIS  = "redis"
 
 	// env
 	envHostPort      = "IP_PORT"
@@ -47,8 +48,8 @@ func main() {
 	flag.StringVar(&addr, envHostPort, ":8000", "ip:port to expose")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
 	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable Raw Sql Endpoint (for postgres or mysql)")
-	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql")
-	flag.StringVar(&dbHost, envDbHost, "0.0.0.0", "database host (for postgres or mysql)")
+	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis")
+	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres or mysql or redis)")
 	flag.StringVar(&dbName, envDbName, "", "database name (for postgres or mysql)")
 	flag.StringVar(&dbUser, envDbUser, "", "database user (for postgres or mysql)")
 	flag.StringVar(&dbPass, envDbPass, "", "database password (for postgres or mysql)")
@@ -86,14 +87,17 @@ func main() {
 			User: dbUser,
 			Pass: dbPass,
 		}
+	case REDIS:
+		db = &database.RedisDatabase{
+			Host: dbHost,
+		}
 	}
 
-	log.Println("DB Mode: " + dbType)
-
 	go server.Init(db)
-
-	log.Println(projectName, " version: ", projectVersion)
-	log.Println("server started at " + server.Address)
+	log.Println(projectName)
+	log.Println("version: ", projectVersion)
+	log.Println("db mode: ", dbType)
+	log.Println("server started at: ", server.Address)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
