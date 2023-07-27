@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	sqlite_dbName             = "caffeine"
 	sqlite_insertQuery        = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
 	sqlite_tablesQuery        = "SELECT  `name` FROM sqlite_master WHERE `type`='table'  ORDER BY name"
 	sqlite_getQuery           = "SELECT data FROM %v WHERE id = $1"
@@ -26,7 +25,7 @@ type SQLiteDatabase struct {
 }
 
 func (p *SQLiteDatabase) Init() {
-	db, err := sql.Open("sqlite3", fmt.Sprintf("%v/%v", p.DirPath, sqlite_dbName))
+	db, err := sql.Open("sqlite3", p.DirPath)
 	if err != nil {
 		log.Fatalf("error connecting to postgres: %v", err)
 	}
