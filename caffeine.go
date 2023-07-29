@@ -44,11 +44,10 @@ const (
 
 func main() {
 	var addr, dbType, dbHost, dbName, dbUser, dbPass, dbPath string
-	var authEnabled, rawSqlEnabled bool
+	var authEnabled bool
 
 	flag.StringVar(&addr, envHostPort, ":8000", "ip:port to expose")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
-	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable Raw Sql Endpoint (for postgres or mysql)")
 	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis | mongo")
 	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage (for fs or sqlite)")
 	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres | mysql | redis | mongo)")
