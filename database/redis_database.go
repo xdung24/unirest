@@ -146,7 +146,7 @@ func (r *RedisDatabase) GetNamespaces() []string {
 	}
 	for _, v := range val {
 		if !strings.HasSuffix(v, redis_schema_suffix) {
-			ret = append(ret, v)
+			ret = append(ret, strings.Replace(v, redis_namespace_prefix, "", 1))
 		}
 	}
 	return ret
