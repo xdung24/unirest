@@ -23,32 +23,40 @@ const (
 
 type MySqlDatabase struct {
 	Host string
+	Name string
 	User string
 	Pass string
-	Name string
 
 	db *sql.DB
 }
 
-func (p *MySqlDatabase) Init() {
-	connInfo := fmt.Sprintf("%v:%v@tcp(%v)/%v", p.User, p.Pass, p.Host, p.Name)
+func (m *MySqlDatabase) Init() {
+	connInfo := fmt.Sprintf("%v:%v@tcp(%v)/%v", m.User, m.Pass, m.Host, m.Name)
 	db, err := sql.Open("mysql", connInfo)
 
 	if err != nil {
 		log.Println(connInfo)
 		log.Fatalf("error connecting to mysql: %v", err)
 	}
-	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetConnMaxLifetime(time.Hour * 1)
 	db.SetMaxOpenConns(100)
 	db.SetMaxIdleConns(10)
 
-	p.db = db
+	m.db = db
 }
 
-func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (m *MySqlDatabase) Disconnect() {
+	err := m.db.Close()
+	if err != nil {
+		panic(err)
+	}
+	log.Println("diconnected")
+}
+
+func (m MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
-	err := p.ensureNamespace(namespace)
+	err := m.ensureNamespace(namespace)
 
 	if err != nil {
 		return &DbError{
@@ -56,7 +64,7 @@ func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbErr
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
+	_, dbErr := m.db.ExecContext(ctx, fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -66,10 +74,10 @@ func (p MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbErr
 	return nil
 }
 
-func (p MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+func (m MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
-	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(mysql_getQuery, namespace), key)
+	rows, dbErr := m.db.QueryContext(ctx, fmt.Sprintf(mysql_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -94,11 +102,11 @@ func (p MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	}
 }
 
-func (p MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+func (m MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_getAllQuery, namespace)
-	rows, dbErr := p.db.QueryContext(ctx, sqlStatement)
+	rows, dbErr := m.db.QueryContext(ctx, sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -123,11 +131,11 @@ func (p MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (p MySqlDatabase) Delete(namespace string, key string) *DbError {
+func (m MySqlDatabase) Delete(namespace string, key string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_deleteQuery, namespace)
-	_, err := p.db.ExecContext(ctx, sqlStatement, key)
+	_, err := m.db.ExecContext(ctx, sqlStatement, key)
 	if err != nil {
 		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on Delete: %v", err)
@@ -139,11 +147,11 @@ func (p MySqlDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (p MySqlDatabase) DeleteAll(namespace string) *DbError {
+func (m MySqlDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_dropNamespaceQuery, namespace)
-	_, err := p.db.ExecContext(ctx, sqlStatement)
+	_, err := m.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		log.Println(sqlStatement)
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
@@ -155,11 +163,11 @@ func (p MySqlDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (p MySqlDatabase) GetNamespaces() []string {
+func (m MySqlDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
-	sqlStatement := fmt.Sprintf(mysql_tablesQuery, p.Name)
-	rows, err := p.db.QueryContext(ctx, sqlStatement)
+	sqlStatement := fmt.Sprintf(mysql_tablesQuery, m.Name)
+	rows, err := m.db.QueryContext(ctx, sqlStatement)
 	if err != nil {
 		log.Printf("error on GetNamespaces: %v\n", err)
 	}
@@ -178,11 +186,11 @@ func (p MySqlDatabase) GetNamespaces() []string {
 	return ret
 }
 
-func (p MySqlDatabase) ensureNamespace(namespace string) (err error) {
+func (m MySqlDatabase) ensureNamespace(namespace string) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	query := fmt.Sprintf(mysql_createTableQuery, namespace)
-	_, err = p.db.ExecContext(ctx, query)
+	_, err = m.db.ExecContext(ctx, query)
 
 	if err != nil {
 		log.Println(query)

@@ -20,14 +20,15 @@ const (
 	╚██████╗██║  ██║██║     ██║     ███████╗██║██║ ╚████║███████╗
 	 ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝	
 	`
-	projectVersion = "1.3.0"
+	projectVersion = "1.0.0"
 
 	MEMORY = "memory"
-	PG     = "postgres"
-	MYSQL  = "mysql"
 	FS     = "fs"
 	SQLITE = "sqlite"
+	PG     = "postgres"
+	MYSQL  = "mysql"
 	REDIS  = "redis"
+	MONGO  = "mongo"
 
 	// env
 	envHostPort      = "IP_PORT"
@@ -48,12 +49,12 @@ func main() {
 	flag.StringVar(&addr, envHostPort, ":8000", "ip:port to expose")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
 	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable Raw Sql Endpoint (for postgres or mysql)")
-	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis")
-	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres or mysql or redis)")
-	flag.StringVar(&dbName, envDbName, "", "database name (for postgres or mysql)")
-	flag.StringVar(&dbUser, envDbUser, "", "database user (for postgres or mysql)")
-	flag.StringVar(&dbPass, envDbPass, "", "database password (for postgres or mysql)")
+	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis | mongo")
 	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage (for fs or sqlite)")
+	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres | mysql | redis | mongo)")
+	flag.StringVar(&dbName, envDbName, "", "database name (for postgres or mysql | mongo)")
+	flag.StringVar(&dbUser, envDbUser, "", "database user (for postgres or mysql | mongo)")
+	flag.StringVar(&dbPass, envDbPass, "", "database password (for postgres or mysql | mongo)")
 	flag.Parse()
 
 	server := service.Server{
@@ -91,6 +92,15 @@ func main() {
 		db = &database.RedisDatabase{
 			Host: dbHost,
 		}
+	case MONGO:
+		db = &database.MongoDatabase{
+			Host: dbHost,
+			Name: dbName,
+			User: dbUser,
+			Pass: dbPass,
+		}
+	default:
+		panic("invalid db type")
 	}
 
 	go server.Init(db)
@@ -103,6 +113,8 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 
 	<-stop
+
+	db.Disconnect()
 
 	log.Println("bye")
 }

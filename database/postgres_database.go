@@ -23,9 +23,9 @@ const (
 
 type PGDatabase struct {
 	Host string
+	Name string
 	User string
 	Pass string
-	Name string
 
 	db *sql.DB
 }
@@ -42,6 +42,14 @@ func (p *PGDatabase) Init() {
 	db.SetMaxIdleConns(10)
 
 	p.db = db
+}
+
+func (p *PGDatabase) Disconnect() {
+	err := p.db.Close()
+	if err != nil {
+		panic(err)
+	}
+	log.Println("diconnected")
 }
 
 func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError {

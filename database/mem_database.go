@@ -20,28 +20,32 @@ func newNamespace() namespace {
 	}
 }
 
-func (mb *MemDatabase) Init() {
-	mb.namespaces = make(map[string]namespace)
+func (m *MemDatabase) Init() {
+	m.namespaces = make(map[string]namespace)
 }
 
-func (mb *MemDatabase) Upsert(namespace string, key string, value []byte) *DbError {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) Disconnect() {
+	// Do nothing
+}
 
-	ns, ok := mb.namespaces[namespace]
+func (m *MemDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	ns, ok := m.namespaces[namespace]
 	if !ok {
 		ns = newNamespace()
-		mb.namespaces[namespace] = ns
+		m.namespaces[namespace] = ns
 	}
 	ns.data[key] = value
 	return nil
 }
 
-func (mb *MemDatabase) Get(namespace string, key string) ([]byte, *DbError) {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	ns, ok := mb.namespaces[namespace]
+	ns, ok := m.namespaces[namespace]
 	if !ok {
 		return nil, &DbError{
 			ErrorCode: NAMESPACE_NOT_FOUND,
@@ -58,11 +62,11 @@ func (mb *MemDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	return val, nil
 }
 
-func (mb *MemDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	ns, ok := mb.namespaces[namespace]
+	ns, ok := m.namespaces[namespace]
 	if !ok {
 		return nil, &DbError{
 			ErrorCode: NAMESPACE_NOT_FOUND,
@@ -72,11 +76,11 @@ func (mb *MemDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ns.data, nil
 }
 
-func (mb *MemDatabase) Delete(namespace string, key string) *DbError {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) Delete(namespace string, key string) *DbError {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	ns, ok := mb.namespaces[namespace]
+	ns, ok := m.namespaces[namespace]
 	if !ok {
 		return &DbError{
 			ErrorCode: NAMESPACE_NOT_FOUND,
@@ -95,27 +99,27 @@ func (mb *MemDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (mb *MemDatabase) DeleteAll(namespace string) *DbError {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) DeleteAll(namespace string) *DbError {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	_, ok := mb.namespaces[namespace]
+	_, ok := m.namespaces[namespace]
 	if !ok {
 		return &DbError{
 			ErrorCode: NAMESPACE_NOT_FOUND,
 			Message:   fmt.Sprintf("namespace '%v' does not exist.", namespace),
 		}
 	}
-	delete(mb.namespaces, namespace)
+	delete(m.namespaces, namespace)
 	return nil
 }
 
-func (mb *MemDatabase) GetNamespaces() []string {
-	mb.mu.Lock()
-	defer mb.mu.Unlock()
+func (m *MemDatabase) GetNamespaces() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	ret := make([]string, 0)
-	for k := range mb.namespaces {
+	for k := range m.namespaces {
 		ret = append(ret, k)
 	}
 	return ret

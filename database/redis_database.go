@@ -22,11 +22,11 @@ type RedisDatabase struct {
 	db *redis.Client
 }
 
-func (p *RedisDatabase) Init() {
+func (r *RedisDatabase) Init() {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     p.Host,
+		Addr:     r.Host,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 		Protocol: 3,  // specify 2 for RESP 2 or 3 for RESP 3
@@ -37,13 +37,21 @@ func (p *RedisDatabase) Init() {
 		log.Fatalf("error connecting to mysql: %v", err)
 	}
 
-	p.db = rdb
+	r.db = rdb
 }
 
-func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (r *RedisDatabase) Disconnect() {
+	err := r.db.Close()
+	if err != nil {
+		panic(err)
+	}
+	log.Println("diconnected")
+}
+
+func (r *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
-	_, err := p.db.HSet(ctx, redis_namespace_prefix+namespace, key, string(value)).Result()
+	_, err := r.db.HSet(ctx, redis_namespace_prefix+namespace, key, string(value)).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -53,10 +61,10 @@ func (p *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 	return nil
 }
 
-func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+func (r *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
-	val, err := p.db.HGet(ctx, redis_namespace_prefix+namespace, key).Result()
+	val, err := r.db.HGet(ctx, redis_namespace_prefix+namespace, key).Result()
 	if err == redis.Nil {
 		return nil, &DbError{
 			ErrorCode: ID_NOT_FOUND,
@@ -73,10 +81,10 @@ func (p *RedisDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	return []byte(val), nil
 }
 
-func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+func (r *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
-	val, err := p.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
+	val, err := r.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
 	if err != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -93,10 +101,10 @@ func (p *RedisDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
+func (r *RedisDatabase) Delete(namespace string, key string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
-	_, err := p.db.HDel(ctx, redis_namespace_prefix+namespace, key).Result()
+	_, err := r.db.HDel(ctx, redis_namespace_prefix+namespace, key).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -106,10 +114,10 @@ func (p *RedisDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
+func (r *RedisDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
-	val, err := p.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
+	val, err := r.db.HGetAll(ctx, redis_namespace_prefix+namespace).Result()
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -117,7 +125,7 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 		}
 	}
 	for i := range val {
-		_, err := p.db.HDel(ctx, redis_namespace_prefix+namespace, i).Result()
+		_, err := r.db.HDel(ctx, redis_namespace_prefix+namespace, i).Result()
 		if err != nil {
 			return &DbError{
 				ErrorCode: INTERNAL_ERROR,
@@ -128,17 +136,17 @@ func (p *RedisDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (p *RedisDatabase) GetNamespaces() []string {
+func (r *RedisDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
 	var ret = []string{}
-	val, _, err := p.db.Scan(ctx, 0, redis_namespace_prefix+"*", 0).Result()
+	val, _, err := r.db.Scan(ctx, 0, redis_namespace_prefix+"*", 0).Result()
 	if err != nil {
 		return ret
 	}
 	for _, v := range val {
 		if !strings.HasSuffix(v, redis_schema_suffix) {
-			ret = append(ret, strings.Replace(v, redis_namespace_prefix, "", 1))
+			ret = append(ret, v)
 		}
 	}
 	return ret

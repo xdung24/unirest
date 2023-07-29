@@ -92,6 +92,11 @@ retrieve later with:
 ./caffeine --DB_TYPE=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet
 ```
 
+```sh
+# mongodb
+./caffeine --DB_TYPE=mongo --DB_HOST=localhost:27017 --DB_NAME=nettruyen
+```
+
 ## All operations
 
 Insert/update

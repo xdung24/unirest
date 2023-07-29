@@ -3,9 +3,10 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,6 +18,7 @@ import (
 
 type Database interface {
 	Init()
+	Disconnect()
 	Upsert(namespace string, key string, value []byte) *database.DbError
 	Get(namespace string, key string) ([]byte, *database.DbError)
 	GetAll(namespace string) (map[string][]byte, *database.DbError)
@@ -72,7 +74,7 @@ func (s *Server) Init(db Database) {
 	s.router.Use(mux.CORSMethodMiddleware(s.router))
 
 	if s.AuthEnabled {
-		verifyBytes, err := ioutil.ReadFile(certsPublicKey)
+		verifyBytes, err := os.ReadFile(certsPublicKey)
 		if err != nil {
 			log.Fatalf("auth required but error on reading public key for JWT: %v", err)
 		}
@@ -172,7 +174,7 @@ func (s *Server) keyValueHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		defer r.Body.Close()
 		r.Body = http.MaxBytesReader(w, r.Body, 1048576)
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -262,7 +264,7 @@ func (s *Server) schemaHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		defer r.Body.Close()
 		r.Body = http.MaxBytesReader(w, r.Body, 1048576)
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			respondWithError(w, http.StatusBadRequest, err.Error())
 			return

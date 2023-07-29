@@ -25,18 +25,26 @@ type SQLiteDatabase struct {
 	db      *sql.DB
 }
 
-func (p *SQLiteDatabase) Init() {
-	db, err := sql.Open("sqlite3", p.DirPath)
+func (s *SQLiteDatabase) Init() {
+	db, err := sql.Open("sqlite3", s.DirPath)
 	if err != nil {
 		log.Fatalf("error connecting to postgres: %v", err)
 	}
-	p.db = db
+	s.db = db
 }
 
-func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (s *SQLiteDatabase) Disconnect() {
+	err := s.db.Close()
+	if err != nil {
+		panic(err)
+	}
+	log.Println("diconnected")
+}
+
+func (s SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
-	err := p.ensureNamespace(namespace)
+	err := s.ensureNamespace(namespace)
 
 	if err != nil {
 		return &DbError{
@@ -44,7 +52,7 @@ func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
-	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(sqlite_insertQuery, namespace), key, string(value))
+	_, dbErr := s.db.ExecContext(ctx, fmt.Sprintf(sqlite_insertQuery, namespace), key, string(value))
 	if dbErr != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -54,10 +62,10 @@ func (p SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbEr
 	return nil
 }
 
-func (p SQLiteDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+func (s SQLiteDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
-	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(sqlite_getQuery, namespace), key)
+	rows, dbErr := s.db.QueryContext(ctx, fmt.Sprintf(sqlite_getQuery, namespace), key)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -82,11 +90,11 @@ func (p SQLiteDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	}
 }
 
-func (p SQLiteDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+func (s SQLiteDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(sqlite_getAllQuery, namespace)
-	rows, dbErr := p.db.QueryContext(ctx, sqlStatement)
+	rows, dbErr := s.db.QueryContext(ctx, sqlStatement)
 	if dbErr != nil {
 		return nil, &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -111,10 +119,10 @@ func (p SQLiteDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (p SQLiteDatabase) Delete(namespace string, key string) *DbError {
+func (s SQLiteDatabase) Delete(namespace string, key string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
-	_, err := p.db.ExecContext(ctx, fmt.Sprintf(sqlite_deleteQuery, namespace), key)
+	_, err := s.db.ExecContext(ctx, fmt.Sprintf(sqlite_deleteQuery, namespace), key)
 	if err != nil {
 		message := fmt.Sprintf("error on Delete: %v", err)
 		return &DbError{
@@ -125,11 +133,11 @@ func (p SQLiteDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (p SQLiteDatabase) DeleteAll(namespace string) *DbError {
+func (s SQLiteDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(sqlite_dropNamespaceQuery, namespace)
-	_, err := p.db.ExecContext(ctx, sqlStatement)
+	_, err := s.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
 		return &DbError{

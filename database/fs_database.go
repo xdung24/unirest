@@ -21,6 +21,10 @@ func (s *StorageDatabase) Init() {
 	}
 }
 
+func (s *StorageDatabase) Disconnect() {
+	// do nothing
+}
+
 func (s *StorageDatabase) Upsert(namespace string, key string, value []byte) *DbError {
 	err := s.ensureNamespace(namespace)
 	if err != nil {
