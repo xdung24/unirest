@@ -3,7 +3,6 @@ package database
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,7 +49,7 @@ func (s *StorageDatabase) Upsert(namespace string, key string, value []byte) *Db
 
 func (s *StorageDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	filePath := s.getFilePath(namespace, key)
-	bytes, err := ioutil.ReadFile(filepath.Clean(filePath))
+	bytes, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, &DbError{
 			ErrorCode: FILESYSTEM_ERROR,
@@ -64,7 +63,7 @@ func (s *StorageDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 func (s *StorageDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	result := make(map[string][]byte)
 
-	docs, readDirErr := ioutil.ReadDir(s.getNamespacePath(namespace))
+	docs, readDirErr := os.ReadDir(s.getNamespacePath(namespace))
 	if readDirErr != nil {
 		return nil, &DbError{
 			ErrorCode: FILESYSTEM_ERROR,

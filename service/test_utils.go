@@ -1,9 +1,9 @@
 package service
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -36,15 +36,8 @@ func checkResponse(t *testing.T, testName string, response string, expected stri
 	}
 }
 
-func checkErr(t *testing.T, err error) {
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-}
-
-// utils
 func getUserSchema() string {
-	jsonSchema, err := ioutil.ReadFile("../schema_sample/user_schema.json")
+	jsonSchema, err := os.ReadFile("../schema_sample/user_schema.json")
 	if err != nil {
 		panic(err)
 	}
