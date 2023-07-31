@@ -217,7 +217,7 @@ You can add a schema for a specific namespace, and only correct JSON data will b
 To add a schema for the namespace "user", use the one available in schema_sample/:
 
 ```sh
-curl --data-binary @./schema_sample/user_schema.json http://localhost:8000/schema/user
+curl --data-binary @./schema_sample/user_schema.json http://localhost:8000/schema/users
 ```
 
 Now only validated "users" will be accepted (see user.json and invalid_user.json under schema_sample/)
