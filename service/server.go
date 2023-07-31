@@ -49,18 +49,20 @@ var (
 )
 
 type Server struct {
-	Address     string
-	AuthEnabled bool
-	router      *mux.Router
-	db          Database
-	broker      *Broker
+	Address        string
+	SwaggerEnabled bool
+	BrokerEnabled  bool
+	AuthEnabled    bool
+	RawSqlEnabled  bool
+
+	router *mux.Router
+	broker *Broker
+	db     Database
 }
 
 func (s *Server) Init(db Database) {
 	s.db = db
 	s.db.Init()
-
-	s.broker = NewServer()
 
 	s.router = mux.NewRouter()
 	s.router.HandleFunc("/ns", s.homeHandler)
@@ -68,9 +70,20 @@ func (s *Server) Init(db Database) {
 	s.router.HandleFunc(KeyValuePattern, s.keyValueHandler).Methods(http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions)
 	s.router.HandleFunc(SearchPattern, s.searchHandler).Queries("filter", "{filter}")
 	s.router.HandleFunc(SchemaPattern, s.schemaHandler)
-	s.router.HandleFunc(OpenAPIPattern, s.openAPIHandler)
-	s.router.PathPrefix(SwaggerUIPattern).Handler(http.StripPrefix(SwaggerUIPattern, http.FileServer(http.Dir("./swagger-ui/"))))
-	s.router.Handle(BrokerPattern, s.broker)
+
+	if s.SwaggerEnabled {
+		s.router.HandleFunc(OpenAPIPattern, s.openAPIHandler)
+		s.router.PathPrefix(SwaggerUIPattern).Handler(http.StripPrefix(SwaggerUIPattern, http.FileServer(http.Dir("./swagger-ui/"))))
+		log.Println("swagger extension enabled")
+
+	}
+
+	if s.BrokerEnabled {
+		s.broker = NewServer()
+		s.router.Handle(BrokerPattern, s.broker)
+		log.Println("broker extension enabled")
+	}
+
 	s.router.Use(mux.CORSMethodMiddleware(s.router))
 
 	if s.AuthEnabled {

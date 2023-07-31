@@ -1,17 +1,22 @@
 {
-  "title": "Example User Schema",
+  "title": "User Schema",
   "type": "object",
   "properties": {
     "firstName": {
-      "type": "string"
+      "type": "string",
+      "minimum": 1,
+      "maximum": 100
     },
     "lastName": {
-      "type": "string"
+      "type": "string",
+      "minimum": 1,
+      "maximum": 100
     },
     "age": {
       "description": "Age in years",
       "type": "integer",
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 200
     }
   },
   "required": ["firstName", "lastName"]

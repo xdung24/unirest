@@ -31,34 +31,45 @@ const (
 	MONGO  = "mongo"
 
 	// env
-	envHostPort      = "IP_PORT"
-	envDbType        = "DB_TYPE"
-	envDbHost        = "DB_HOST"
-	envDbName        = "DB_NAME"
-	envDbUser        = "DB_USER"
-	envDbPass        = "DB_PASS"
-	envDbPath        = "DB_PATH"
-	envAuthEnabled   = "AUTH_ENABLED"
-	envRawSqlEnabled = "RAW_SQL_ENABLED"
+	envHostPort       = "IP_PORT"
+	envDbType         = "DB_TYPE"
+	envDbHost         = "DB_HOST"
+	envDbName         = "DB_NAME"
+	envDbUser         = "DB_USER"
+	envDbPass         = "DB_PASS"
+	envDbPath         = "DB_PATH"
+	envSwaggerEnabled = "SWAGGER_ENABLED"
+	envBrokerEnabled  = "BROKER_ENABLED"
+	envAuthEnabled    = "AUTH_ENABLED"
+	envRawSqlEnabled  = "RAW_SQL_ENABLED"
 )
 
 func main() {
 	var addr, dbType, dbHost, dbName, dbUser, dbPass, dbPath string
-	var authEnabled bool
+	var swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
 
 	flag.StringVar(&addr, envHostPort, ":8000", "ip:port to expose")
+
+	flag.BoolVar(&swaggerEnabled, envSwaggerEnabled, false, "enable swagger")
+	flag.BoolVar(&brokerEnabled, envBrokerEnabled, false, "enable broker")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
+	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable raw sql (postgres)")
+
 	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis | mongo")
 	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage (for fs or sqlite)")
 	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres | mysql | redis | mongo)")
 	flag.StringVar(&dbName, envDbName, "", "database name (for postgres or mysql | mongo)")
 	flag.StringVar(&dbUser, envDbUser, "", "database user (for postgres or mysql | mongo)")
 	flag.StringVar(&dbPass, envDbPass, "", "database password (for postgres or mysql | mongo)")
+
 	flag.Parse()
 
 	server := service.Server{
-		Address:     addr,
-		AuthEnabled: authEnabled,
+		Address:        addr,
+		SwaggerEnabled: swaggerEnabled,
+		BrokerEnabled:  brokerEnabled,
+		AuthEnabled:    authEnabled,
+		RawSqlEnabled:  rawSqlEnabled,
 	}
 
 	var db service.Database
@@ -103,6 +114,7 @@ func main() {
 	}
 
 	go server.Init(db)
+
 	log.Println(projectName)
 	log.Println("version: ", projectVersion)
 	log.Println("db mode: ", dbType)
