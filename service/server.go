@@ -1,6 +1,7 @@
 package service
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/itchyny/gojq"
 	"github.com/xeipuuv/gojsonschema"
@@ -99,7 +101,7 @@ func (s *Server) Init(db Database) {
 	}
 
 	srv := &http.Server{
-		Handler:      s.router,
+		Handler:      handlers.CompressHandlerLevel(s.router, gzip.BestSpeed),
 		Addr:         s.Address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
