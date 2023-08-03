@@ -43,6 +43,7 @@ func (m *MongoDatabase) Init() {
 		log.Fatalf("error connecting to database: %v", m.Name)
 	}
 	m.db = db
+	log.Println("db connected")
 }
 
 func (m *MongoDatabase) Disconnect() {

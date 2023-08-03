@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -40,6 +42,7 @@ func (p *PGDatabase) Init() {
 	db.SetMaxIdleConns(10)
 
 	p.db = db
+	log.Println("db connected")
 }
 
 func (p *PGDatabase) Disconnect() {

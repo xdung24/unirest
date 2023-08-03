@@ -30,6 +30,7 @@ func (s *SQLiteDatabase) Init() {
 		log.Fatalf("error connecting to postgres: %v", err)
 	}
 	s.db = db
+	log.Println("db connected")
 }
 
 func (s *SQLiteDatabase) Disconnect() {

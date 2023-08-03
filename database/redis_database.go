@@ -38,6 +38,7 @@ func (r *RedisDatabase) Init() {
 	}
 
 	r.db = rdb
+	log.Println("db connected")
 }
 
 func (r *RedisDatabase) Disconnect() {

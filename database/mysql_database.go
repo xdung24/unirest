@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -41,6 +43,7 @@ func (m *MySqlDatabase) Init() {
 	db.SetMaxIdleConns(10)
 
 	m.db = db
+	log.Println("db connected")
 }
 
 func (m *MySqlDatabase) Disconnect() {

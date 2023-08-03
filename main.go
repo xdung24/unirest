@@ -7,8 +7,8 @@ import (
 
 	"github.com/namsral/flag"
 
-	"github.com/rehacktive/caffeine/database"
-	"github.com/rehacktive/caffeine/service"
+	"github.com/xdung24/universal-rest/database"
+	"github.com/xdung24/universal-rest/service"
 )
 
 const (
@@ -106,7 +106,7 @@ func main() {
 	go server.Init(db)
 
 	log.Println("server started at: ", server.Address)
-
+	log.Println("db type: ", dbType)
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
