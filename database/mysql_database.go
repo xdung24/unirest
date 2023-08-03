@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -53,7 +51,7 @@ func (m *MySqlDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (m MySqlDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (m MySqlDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	err := m.ensureNamespace(namespace)

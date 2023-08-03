@@ -24,7 +24,7 @@ func (s *StorageDatabase) Disconnect() {
 	// do nothing
 }
 
-func (s *StorageDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (s *StorageDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	err := s.ensureNamespace(namespace)
 	if err != nil {
 		return &DbError{
@@ -35,13 +35,26 @@ func (s *StorageDatabase) Upsert(namespace string, key string, value []byte) *Db
 	filePath := s.getFilePath(namespace, key)
 
 	_, statErr := os.Stat(filePath)
-	if statErr == nil || errors.Is(statErr, os.ErrNotExist) {
-		err = os.WriteFile(filePath, value, os.ModePerm)
-		if err != nil {
+
+	if statErr == nil {
+		if allowOverWrite {
+			err = os.WriteFile(filePath, value, os.ModePerm)
+		} else {
 			return &DbError{
-				ErrorCode: FILESYSTEM_ERROR,
-				Message:   err.Error(),
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
 			}
+		}
+	} else if errors.Is(statErr, os.ErrNotExist) {
+		err = os.WriteFile(filePath, value, os.ModePerm)
+	} else {
+		err = statErr
+	}
+
+	if err != nil {
+		return &DbError{
+			ErrorCode: FILESYSTEM_ERROR,
+			Message:   err.Error(),
 		}
 	}
 	return nil

@@ -10,6 +10,7 @@ const (
 	ID_NOT_FOUND           ErrorCode = 2
 	UNABLE_TO_CREATE_TABLE ErrorCode = 3
 	FILESYSTEM_ERROR       ErrorCode = 4
+	ITEM_CONFLICT          ErrorCode = 5
 )
 
 type DbError struct {

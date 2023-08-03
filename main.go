@@ -12,16 +12,6 @@ import (
 )
 
 const (
-	projectName = `
-	 ██████╗ █████╗ ███████╗███████╗███████╗██╗███╗   ██╗███████╗
-	██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝██║████╗  ██║██╔════╝
-	██║     ███████║█████╗  █████╗  █████╗  ██║██╔██╗ ██║█████╗  
-	██║     ██╔══██║██╔══╝  ██╔══╝  ██╔══╝  ██║██║╚██╗██║██╔══╝  
-	╚██████╗██║  ██║██║     ██║     ███████╗██║██║ ╚████║███████╗
-	 ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚══════╝╚═╝╚═╝  ╚═══╝╚══════╝	
-	`
-	projectVersion = "1.0.0"
-
 	MEMORY = "memory"
 	FS     = "fs"
 	SQLITE = "sqlite"
@@ -32,7 +22,6 @@ const (
 
 	// env
 	envHostPort       = "IP_PORT"
-	envQuiet          = "QUIET"
 	envDbType         = "DB_TYPE"
 	envDbHost         = "DB_HOST"
 	envDbName         = "DB_NAME"
@@ -47,11 +36,10 @@ const (
 
 func main() {
 	var addr, dbType, dbHost, dbName, dbUser, dbPass, dbPath string
-	var quiet, swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
+	var swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
 
 	flag.StringVar(&addr, envHostPort, "0.0.0.0:8000", "ip:port to expose")
 
-	flag.BoolVar(&quiet, envQuiet, false, "enable show info on startup")
 	flag.BoolVar(&swaggerEnabled, envSwaggerEnabled, false, "enable swagger")
 	flag.BoolVar(&brokerEnabled, envBrokerEnabled, false, "enable broker")
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
@@ -113,12 +101,6 @@ func main() {
 		}
 	default:
 		panic("invalid db type")
-	}
-
-	if !quiet {
-		log.Println(projectName)
-		log.Println("version: ", projectVersion)
-		log.Println("db mode: ", dbType)
 	}
 
 	go server.Init(db)

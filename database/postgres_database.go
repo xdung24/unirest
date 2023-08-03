@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	_ "github.com/lib/pq"
 )
 
 const (
@@ -52,7 +50,7 @@ func (p *PGDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (p PGDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (p PGDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	err := p.ensureNamespace(namespace)

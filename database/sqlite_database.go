@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -41,7 +40,7 @@ func (s *SQLiteDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (s SQLiteDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (s SQLiteDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	err := s.ensureNamespace(namespace)

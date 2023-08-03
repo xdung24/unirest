@@ -48,7 +48,7 @@ func (r *RedisDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (r *RedisDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (r *RedisDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
 	_, err := r.db.HSet(ctx, redis_namespace_prefix+namespace, key, string(value)).Result()

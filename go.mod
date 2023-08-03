@@ -1,4 +1,4 @@
-module github.com/rehacktive/caffeine
+module github.com/xdung24/universal-rest
 
 go 1.20
 

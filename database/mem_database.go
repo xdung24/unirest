@@ -28,7 +28,7 @@ func (m *MemDatabase) Disconnect() {
 	// Do nothing
 }
 
-func (m *MemDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (m *MemDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

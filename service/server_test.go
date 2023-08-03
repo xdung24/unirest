@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/mux"
 
-	"github.com/rehacktive/caffeine/database"
+	"github.com/xdung24/universal-rest/database"
 )
 
 type testCase struct {
@@ -31,7 +31,7 @@ var testKey = "key1"
 var validJsonForSchema = `{
 	"firstName":"john",
 	"lastName":"never",
-	"age":666
+	"age":20
 }`
 var invalidJsonForSchema = `{
 	"firstName":"john"
@@ -164,7 +164,7 @@ var tests = []testCase{
 		expectedResponseCode: http.StatusOK,
 		expectedResponse:     getUserSchema(),
 		beforeTest: func(d Database) {
-			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()))
+			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()), true)
 		},
 	},
 	{
@@ -183,7 +183,7 @@ var tests = []testCase{
 		expectedResponseCode: http.StatusAccepted,
 		expectedResponse:     "{}",
 		beforeTest: func(d Database) {
-			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()))
+			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()), true)
 		},
 	},
 	{
@@ -194,7 +194,7 @@ var tests = []testCase{
 		expectedResponseCode: http.StatusCreated,
 		expectedResponse:     validJsonForSchema,
 		beforeTest: func(d Database) {
-			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()))
+			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()), true)
 		},
 	},
 	{
@@ -205,14 +205,14 @@ var tests = []testCase{
 		expectedResponseCode: http.StatusBadRequest,
 		expectedResponse:     `{ "status": 400, "message": "(root): lastName is required" }`,
 		beforeTest: func(d Database) {
-			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()))
+			d.Upsert("user"+SchemaId, SchemaId, []byte(getUserSchema()), true)
 		},
 	},
 }
 
 func setupCaffeineTest(db Database) *TestingRouter {
 	db.Init()
-	db.Upsert(testNamespace, testKey, []byte(jsonPayload))
+	db.Upsert(testNamespace, testKey, []byte(jsonPayload), true)
 
 	server := Server{
 		db: db,

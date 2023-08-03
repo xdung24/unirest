@@ -56,7 +56,7 @@ func (m *MongoDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (m *MongoDatabase) Upsert(namespace string, key string, value []byte) *DbError {
+func (m *MongoDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
 	defer cancel()
 
