@@ -81,7 +81,17 @@ func (m *MongoDatabase) Upsert(namespace string, key string, value []byte, allow
 	}
 
 	filter := bson.D{{Key: "id", Value: key}}
-	update := bson.D{{Key: "$set", Value: bdoc}}
+	var update = bson.D{{Key: "$set", Value: bdoc}}
+	if !allowOverWrite {
+		res := coll.FindOne(ctx, filter)
+		if res != nil && res.Err() == nil { // document exists
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
+
 	opts := options.Update().SetUpsert(true)
 	_, err = coll.UpdateOne(ctx, filter, update, opts)
 	if err != nil {

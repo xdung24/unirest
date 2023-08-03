@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	pg_insertQuery        = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
-	pg_tablesQuery        = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
-	pg_getQuery           = "SELECT data FROM %v WHERE id = $1"
-	pg_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
-	pg_deleteQuery        = "DELETE FROM %v WHERE id = $1"
-	pg_dropNamespaceQuery = "DROP TABLE %v"
-	pg_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
-	pg_dbTimeout          = 10 * time.Second
+	pg_insertQuery         = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
+	pg_tablesQuery         = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+	pg_recordExistentQuery = "SELECT COUNT(1) FROM %v WHERE id = $1"
+	pg_getQuery            = "SELECT data FROM %v WHERE id = $1"
+	pg_getAllQuery         = "SELECT id, data FROM %v ORDER BY id"
+	pg_deleteQuery         = "DELETE FROM %v WHERE id = $1"
+	pg_dropNamespaceQuery  = "DROP TABLE %v"
+	pg_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
+	pg_dbTimeout           = 10 * time.Second
 )
 
 type PGDatabase struct {
@@ -64,6 +65,25 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte, allowOver
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
+
+	if !allowOverWrite {
+		res := p.db.QueryRowContext(ctx, fmt.Sprintf(pg_recordExistentQuery, namespace), key)
+		var count string
+		err := res.Scan(&count)
+		if err != nil {
+			return &DbError{
+				ErrorCode: INTERNAL_ERROR,
+				Message:   fmt.Sprintf("error on QueryRow: %v", err),
+			}
+		}
+		if count == "1" {
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
+
 	_, dbErr := p.db.ExecContext(ctx, fmt.Sprintf(pg_insertQuery, namespace), key, string(value))
 	if dbErr != nil {
 		return &DbError{

@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	mysql_insertQuery        = "INSERT INTO %v (id, data) VALUES(?, ?) ON DUPLICATE KEY UPDATE data = ?"
-	mysql_tablesQuery        = "SELECT table_name FROM information_schema.tables WHERE table_schema = '%v'"
-	mysql_getQuery           = "SELECT data FROM %v WHERE id = ?"
-	mysql_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
-	mysql_deleteQuery        = "DELETE FROM %v WHERE id = ?"
-	mysql_dropNamespaceQuery = "DROP TABLE %v"
-	mysql_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
-	mysql_dbTimeout          = 10 * time.Second
+	mysql_insertQuery         = "INSERT INTO %v (id, data) VALUES(?, ?) ON DUPLICATE KEY UPDATE data = ?"
+	mysql_tablesQuery         = "SELECT table_name FROM information_schema.tables WHERE table_schema = '%v'"
+	mysql_recordExistentQuery = "SELECT COUNT(1) FROM %v WHERE id = ?"
+	mysql_getQuery            = "SELECT data FROM %v WHERE id = ?"
+	mysql_getAllQuery         = "SELECT id, data FROM %v ORDER BY id"
+	mysql_deleteQuery         = "DELETE FROM %v WHERE id = ?"
+	mysql_dropNamespaceQuery  = "DROP TABLE %v"
+	mysql_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
+	mysql_dbTimeout           = 10 * time.Second
 )
 
 type MySqlDatabase struct {
@@ -65,6 +66,25 @@ func (m MySqlDatabase) Upsert(namespace string, key string, value []byte, allowO
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
+
+	if !allowOverWrite {
+		res := m.db.QueryRowContext(ctx, fmt.Sprintf(mysql_recordExistentQuery, namespace), key)
+		var count string
+		err := res.Scan(&count)
+		if err != nil {
+			return &DbError{
+				ErrorCode: INTERNAL_ERROR,
+				Message:   fmt.Sprintf("error on QueryRow: %v", err),
+			}
+		}
+		if count == "1" {
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
+
 	_, dbErr := m.db.ExecContext(ctx, fmt.Sprintf(mysql_insertQuery, namespace), key, string(value), string(value))
 	if dbErr != nil {
 		return &DbError{

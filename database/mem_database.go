@@ -37,6 +37,15 @@ func (m *MemDatabase) Upsert(namespace string, key string, value []byte, allowOv
 		ns = newNamespace()
 		m.namespaces[namespace] = ns
 	}
+	if !allowOverWrite && ok { // if not allow overwrite and already has namespace
+		// look for existing record, if it is not null then return 409, conflict
+		if ns.data[key] != nil {
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
 	ns.data[key] = value
 	return nil
 }

@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	sqlite_insertQuery        = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
-	sqlite_tablesQuery        = "SELECT  `name` FROM sqlite_master WHERE `type`='table'  ORDER BY name"
-	sqlite_getQuery           = "SELECT data FROM %v WHERE id = $1"
-	sqlite_getAllQuery        = "SELECT id, data FROM %v ORDER BY id"
-	sqlite_deleteQuery        = "DELETE FROM %v WHERE id = $1"
-	sqlite_dropNamespaceQuery = "DROP TABLE %v"
-	sqlite_createTableQuery   = "CREATE TABLE IF NOT EXISTS %v ( id string PRIMARY KEY, data string NOT NULL)"
+	sqlite_insertQuery         = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
+	sqlite_tablesQuery         = "SELECT  `name` FROM sqlite_master WHERE `type`='table'  ORDER BY name"
+	sqlite_recordExistentQuery = "SELECT COUNT(1) FROM %v WHERE id = $1"
+	sqlite_getQuery            = "SELECT data FROM %v WHERE id = $1"
+	sqlite_getAllQuery         = "SELECT id, data FROM %v ORDER BY id"
+	sqlite_deleteQuery         = "DELETE FROM %v WHERE id = $1"
+	sqlite_dropNamespaceQuery  = "DROP TABLE %v"
+	sqlite_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v ( id string PRIMARY KEY, data string NOT NULL)"
 )
 
 type SQLiteDatabase struct {
@@ -52,6 +53,25 @@ func (s SQLiteDatabase) Upsert(namespace string, key string, value []byte, allow
 			Message:   fmt.Sprintf("namespace %v does not exist", namespace),
 		}
 	}
+
+	if !allowOverWrite {
+		res := s.db.QueryRowContext(ctx, fmt.Sprintf(sqlite_recordExistentQuery, namespace), key)
+		var count string
+		err := res.Scan(&count)
+		if err != nil {
+			return &DbError{
+				ErrorCode: INTERNAL_ERROR,
+				Message:   fmt.Sprintf("error on QueryRow: %v", err),
+			}
+		}
+		if count == "1" {
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
+
 	_, dbErr := s.db.ExecContext(ctx, fmt.Sprintf(sqlite_insertQuery, namespace), key, string(value))
 	if dbErr != nil {
 		return &DbError{

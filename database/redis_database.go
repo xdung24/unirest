@@ -52,6 +52,17 @@ func (r *RedisDatabase) Disconnect() {
 func (r *RedisDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()
+
+	if !allowOverWrite {
+		_, err := r.db.HGet(ctx, redis_namespace_prefix+namespace, key).Result()
+		if err != redis.Nil {
+			return &DbError{
+				ErrorCode: ITEM_CONFLICT,
+				Message:   "item already exists",
+			}
+		}
+	}
+
 	_, err := r.db.HSet(ctx, redis_namespace_prefix+namespace, key, string(value)).Result()
 	if err != nil {
 		return &DbError{
