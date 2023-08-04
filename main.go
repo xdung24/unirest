@@ -12,17 +12,18 @@ import (
 )
 
 const (
-	MEMORY = "memory"
-	FS     = "fs"
-	SQLITE = "sqlite"
-	PG     = "postgres"
-	MYSQL  = "mysql"
-	REDIS  = "redis"
-	MONGO  = "mongo"
+	// db driver
+	MEMORY = "memory"   // fastest (hashmap on RAM)
+	FS     = "fs"       // depend on disk speed, second fastest on ssd nvme
+	SQLITE = "sqlite"   // local disk relational database (sql)
+	PG     = "postgres" // relational database (sql)
+	MYSQL  = "mysql"    // relational database (sql)
+	REDIS  = "redis"    // keypair value database (nosql)
+	MONGO  = "mongo"    // bson document database (nosql)
 
 	// env
 	envHostPort       = "IP_PORT"
-	envDbType         = "DB_TYPE"
+	envDbDriver       = "DB_DRIVER"
 	envDbHost         = "DB_HOST"
 	envDbName         = "DB_NAME"
 	envDbUser         = "DB_USER"
@@ -35,7 +36,7 @@ const (
 )
 
 func main() {
-	var addr, dbType, dbHost, dbName, dbUser, dbPass, dbPath string
+	var addr, dbDriver, dbHost, dbName, dbUser, dbPass, dbPath string
 	var swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
 
 	flag.StringVar(&addr, envHostPort, "0.0.0.0:8000", "ip:port to expose")
@@ -45,7 +46,7 @@ func main() {
 	flag.BoolVar(&authEnabled, envAuthEnabled, false, "enable JWT auth")
 	flag.BoolVar(&rawSqlEnabled, envRawSqlEnabled, false, "enable raw sql (postgres)")
 
-	flag.StringVar(&dbType, envDbType, MEMORY, "db type to use, options: memory | fs | sqlite| postgres | mysql | redis | mongo")
+	flag.StringVar(&dbDriver, envDbDriver, MEMORY, "db type to use (memory | fs | sqlite| postgres | mysql | redis | mongo)")
 	flag.StringVar(&dbPath, envDbPath, "./data", "path of the file storage (for fs | sqlite)")
 	flag.StringVar(&dbHost, envDbHost, "localhost", "database host (for postgres | mysql | redis | mongo)")
 	flag.StringVar(&dbName, envDbName, "", "database name (for postgres | mysql | mongo)")
@@ -63,7 +64,7 @@ func main() {
 	}
 
 	var db service.Database
-	switch dbType {
+	switch dbDriver {
 	case MEMORY:
 		db = &database.MemDatabase{}
 	case FS:
@@ -106,7 +107,7 @@ func main() {
 	go server.Init(db)
 
 	log.Println("server started at: ", server.Address)
-	log.Println("db type: ", dbType)
+	log.Println("db type: ", dbDriver)
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 

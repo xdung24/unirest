@@ -64,37 +64,37 @@ retrieve later with:
 
 ```sh
 # memory
-./universal-rest --DB_TYPE=memory --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=memory --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # file system
-./universal-rest --DB_TYPE=fs --DB_PATH=./data/ --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=fs --DB_PATH=./data/ --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # sqlite
-./universal-rest --DB_TYPE=sqlite --DB_PATH=./data/db.sqlite --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=sqlite --DB_PATH=./data/db.sqlite --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # redis
-./universal-rest --DB_TYPE=redis --DB_HOST=localhost:6379 --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=redis --DB_HOST=localhost:6379 --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # postgres
-./universal-rest --DB_TYPE=postgres --DB_HOST=localhost:5432 --DB_NAME=nettruyen --DB_USER=postgres --DB_PASS=postgres --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=postgres --DB_HOST=localhost:5432 --DB_NAME=nettruyen --DB_USER=postgres --DB_PASS=postgres --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # mysql/mariadb
-./universal-rest --DB_TYPE=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh
 # mongodb
-./universal-rest --DB_TYPE=mongo --DB_HOST=localhost:27017 --DB_NAME=nettruyen --AUTH_ENABLED=true --BROKER_ENABLED=true
+./universal-rest --DB_DRIVER=mongo --DB_HOST=localhost:27017 --DB_NAME=nettruyen --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ## All operations
