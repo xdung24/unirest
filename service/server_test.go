@@ -221,7 +221,8 @@ func setupCaffeineTest(db Database) *TestingRouter {
 	testingRouter := TestingRouter{Router: mux.NewRouter()}
 	testingRouter.AddHandler("/", server.homeHandler)
 	testingRouter.AddHandler(NamespacePattern, server.namespaceHandler)
-	testingRouter.AddHandler(KeyValuePattern, server.keyValueHandler)
+	testingRouter.AddHandler(DataSetPattern, server.dataSetHandler)
+	testingRouter.AddHandler(DataSetKeyValuePattern, server.dataSetKeyValueHandler)
 	testingRouter.AddHandler(SchemaPattern, server.schemaHandler)
 
 	return &testingRouter

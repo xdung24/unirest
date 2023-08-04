@@ -57,6 +57,33 @@ func (m *MongoDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (m *MongoDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
+	defer cancel()
+
+	filter := bson.D{{}}
+	names, err := m.db.ListCollectionNames(ctx, filter)
+	if err != nil {
+		log.Panicf("error on GetNamespaces: %v", err.Error())
+		return []string{}
+	}
+	return names
+}
+
+func (m *MongoDatabase) DropNameSpace(namespace string) *DbError {
+	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
+	defer cancel()
+
+	err := m.db.Collection(namespace).Drop(ctx)
+	if err != nil {
+		return &DbError{
+			ErrorCode: INTERNAL_ERROR,
+			Message:   fmt.Sprintf("error on DeleteAll: %v", err),
+		}
+	}
+	return nil
+}
+
 func (m *MongoDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
 	defer cancel()
@@ -196,7 +223,7 @@ func (m *MongoDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
 	defer cancel()
 
-	err := m.db.Collection(namespace).Drop(ctx)
+	_, err := m.db.Collection(namespace).DeleteMany(ctx, bson.D{{}})
 	if err != nil {
 		return &DbError{
 			ErrorCode: INTERNAL_ERROR,
@@ -206,20 +233,7 @@ func (m *MongoDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (m *MongoDatabase) GetNamespaces() []string {
-	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
-	defer cancel()
-
-	filter := bson.D{{}}
-	names, err := m.db.ListCollectionNames(ctx, filter)
-	if err != nil {
-		log.Panicf("error on GetNamespaces: %v", err.Error())
-		return []string{}
-	}
-	return names
-}
-
-func (m MongoDatabase) ensureNamespace(namespace string) (err error) {
+func (m *MongoDatabase) ensureNamespace(namespace string) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 

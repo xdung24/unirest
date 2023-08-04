@@ -11,14 +11,15 @@ import (
 )
 
 const (
+	pg_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
+	pg_dropNamespaceQuery  = "DROP TABLE %v"
 	pg_insertQuery         = "INSERT INTO %v (id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"
 	pg_tablesQuery         = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
 	pg_recordExistentQuery = "SELECT COUNT(1) FROM %v WHERE id = $1"
 	pg_getQuery            = "SELECT data FROM %v WHERE id = $1"
 	pg_getAllQuery         = "SELECT id, data FROM %v ORDER BY id"
 	pg_deleteQuery         = "DELETE FROM %v WHERE id = $1"
-	pg_dropNamespaceQuery  = "DROP TABLE %v"
-	pg_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v ( id text PRIMARY KEY, data json NOT NULL)"
+	pg_deleteAllQuery      = "TRUNCATE TABLE %v"
 	pg_dbTimeout           = 10 * time.Second
 )
 
@@ -54,7 +55,32 @@ func (p *PGDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (p PGDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
+func (p *PGDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
+	defer cancel()
+	rows, err := p.db.QueryContext(ctx, pg_tablesQuery)
+	if err != nil {
+		log.Printf("error on GetNamespaces: %v\n", err)
+	}
+	defer rows.Close()
+
+	ret := make([]string, 0)
+	for rows.Next() {
+		var tableName string
+		err = rows.Scan(&tableName)
+		if err != nil {
+			log.Printf("error on Scan: %v\n", err)
+		}
+		ret = append(ret, tableName)
+	}
+	return ret
+}
+
+func (p *PGDatabase) DropNameSpace(namespace string) *DbError {
+	return nil
+}
+
+func (p *PGDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	err := p.ensureNamespace(namespace)
@@ -94,7 +120,7 @@ func (p PGDatabase) Upsert(namespace string, key string, value []byte, allowOver
 	return nil
 }
 
-func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+func (p *PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	rows, dbErr := p.db.QueryContext(ctx, fmt.Sprintf(pg_getQuery, namespace), key)
@@ -122,7 +148,7 @@ func (p PGDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	}
 }
 
-func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+func (p *PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(pg_getAllQuery, namespace)
@@ -151,7 +177,7 @@ func (p PGDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (p PGDatabase) Delete(namespace string, key string) *DbError {
+func (p *PGDatabase) Delete(namespace string, key string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	_, err := p.db.ExecContext(ctx, fmt.Sprintf(pg_deleteQuery, namespace), key)
@@ -165,10 +191,10 @@ func (p PGDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (p PGDatabase) DeleteAll(namespace string) *DbError {
+func (p *PGDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
-	sqlStatement := fmt.Sprintf(pg_dropNamespaceQuery, namespace)
+	sqlStatement := fmt.Sprintf(pg_deleteAllQuery, namespace)
 	_, err := p.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		message := fmt.Sprintf("error on DeleteAll: %v", err)
@@ -180,28 +206,7 @@ func (p PGDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (p PGDatabase) GetNamespaces() []string {
-	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
-	defer cancel()
-	rows, err := p.db.QueryContext(ctx, pg_tablesQuery)
-	if err != nil {
-		log.Printf("error on GetNamespaces: %v\n", err)
-	}
-	defer rows.Close()
-
-	ret := make([]string, 0)
-	for rows.Next() {
-		var tableName string
-		err = rows.Scan(&tableName)
-		if err != nil {
-			log.Printf("error on Scan: %v\n", err)
-		}
-		ret = append(ret, tableName)
-	}
-	return ret
-}
-
-func (p PGDatabase) ensureNamespace(namespace string) (err error) {
+func (p *PGDatabase) ensureNamespace(namespace string) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()
 	query := fmt.Sprintf(pg_createTableQuery, namespace)

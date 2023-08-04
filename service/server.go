@@ -1,7 +1,6 @@
 package service
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"log"
@@ -9,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/xeipuuv/gojsonschema"
 
@@ -19,28 +17,37 @@ import (
 type Database interface {
 	Init()
 	Disconnect()
+	GetNamespaces() []string
+	DropNameSpace(namespace string) *database.DbError
 	Upsert(namespace string, key string, value []byte, allowOverWrite bool) *database.DbError
 	Get(namespace string, key string) ([]byte, *database.DbError)
 	GetAll(namespace string) (map[string][]byte, *database.DbError)
 	Delete(namespace string, key string) *database.DbError
 	DeleteAll(namespace string) *database.DbError
-	GetNamespaces() []string
 }
 
 const (
-	NamespacePattern = "/ns/{namespace:[a-zA-Z0-9]+}"
-	KeyValuePattern  = "/ns/{namespace:[a-zA-Z0-9]+}/{key:[a-zA-Z0-9]+}"
-	SearchPattern    = "/search/{namespace:[a-zA-Z0-9]+}"
-	SchemaPattern    = "/schema/{namespace:[a-zA-Z0-9]+}"
-	OpenAPIPattern   = "/{openapi|swagger}.json"
-	BrokerPattern    = "/broker"
-	SwaggerUIPattern = "/swaggerui/"
-	SchemaId         = "_schema"
+	NamespaceHomePattern   = "/namespace"
+	NamespacePattern       = "/namespace/{namespace:[a-zA-Z0-9]+}"
+	DataSetPattern         = "/dataset/{namespace:[a-zA-Z0-9]+}"
+	DataSetKeyValuePattern = "/dataset/{namespace:[a-zA-Z0-9]+}/{key:[a-zA-Z0-9]+}"
+	SearchPattern          = "/search/{namespace:[a-zA-Z0-9]+}"
+	SchemaPattern          = "/schema/{namespace:[a-zA-Z0-9]+}"
+	OpenAPIPattern         = "/{openapi|swagger}.json"
+	BrokerPattern          = "/broker"
+	SwaggerUIPattern       = "/swaggerui/"
 
-	EVENT_ITEM_ADDED        = "ITEM_ADDED"
-	EVENT_ITEM_UPDATED      = "ITEM_UPDATED"
-	EVENT_ITEM_DELETED      = "ITEM_DELETED"
+	SchemaId = "_schema"
+
+	EVENT_ITEM_CREATED = "ITEM_CREATED"
+	EVENT_ITEM_UPDATED = "ITEM_UPDATED"
+	EVENT_ITEM_DELETED = "ITEM_DELETED"
+
+	EVENT_NAMESPACE_CREATED = "NAMESPACE_CREATED"
 	EVENT_NAMESPACE_DELETED = "NAMESPACE_DELETED"
+
+	EVENT_SCHEMA_CREATED = "SCHEMA_CREATED"
+	EVENT_SCHEMA_DELETED = "SCHEMA_DELETED"
 
 	certsPublicKey = "./certs/public-cert.pem"
 )
@@ -66,9 +73,13 @@ func (s *Server) Init(db Database) {
 	s.db.Init()
 
 	s.router = mux.NewRouter()
-	s.router.HandleFunc("/ns", s.homeHandler)
+
+	s.router.HandleFunc(NamespaceHomePattern, s.homeHandler)
 	s.router.HandleFunc(NamespacePattern, s.namespaceHandler).Methods(http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions)
-	s.router.HandleFunc(KeyValuePattern, s.keyValueHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodOptions)
+
+	s.router.HandleFunc(DataSetPattern, s.dataSetHandler).Methods(http.MethodGet, http.MethodDelete, http.MethodOptions)
+	s.router.HandleFunc(DataSetKeyValuePattern, s.dataSetKeyValueHandler).Methods(http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodOptions)
+
 	s.router.HandleFunc(SearchPattern, s.searchHandler).Queries("filter", "{filter}")
 	s.router.HandleFunc(SchemaPattern, s.schemaHandler)
 
@@ -100,7 +111,8 @@ func (s *Server) Init(db Database) {
 	}
 
 	srv := &http.Server{
-		Handler:      handlers.CompressHandlerLevel(s.router, gzip.BestSpeed),
+		// Handler:      handlers.CompressHandlerLevel(s.router, gzip.BestSpeed),
+		Handler:      s.router,
 		Addr:         s.Address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

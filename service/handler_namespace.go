@@ -47,9 +47,8 @@ func (s *Server) namespaceHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		respondWithJSON(w, http.StatusOK, string(namespaceData))
-
 	case http.MethodDelete:
-		dbErr := s.db.DeleteAll(namespace)
+		dbErr := s.db.DropNameSpace(namespace)
 		if dbErr != nil {
 			switch dbErr.ErrorCode {
 			case database.NAMESPACE_NOT_FOUND:

@@ -24,6 +24,35 @@ func (s *StorageDatabase) Disconnect() {
 	// do nothing
 }
 
+func (s *StorageDatabase) GetNamespaces() []string {
+	results := make([]string, 0)
+
+	namespaces, err := os.ReadDir(s.RootDirPath)
+	if err != nil {
+		log.Println(err)
+		return results
+	}
+
+	for _, ns := range namespaces {
+		if ns.IsDir() {
+			results = append(results, ns.Name())
+		}
+	}
+	return results
+}
+
+func (s *StorageDatabase) DropNameSpace(namespace string) *DbError {
+	err := os.RemoveAll(s.getNamespacePath(namespace))
+	if err != nil {
+		return &DbError{
+			ErrorCode: FILESYSTEM_ERROR,
+			Message:   err.Error(),
+		}
+	}
+
+	return nil
+}
+
 func (s *StorageDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	err := s.ensureNamespace(namespace)
 	if err != nil {
@@ -122,32 +151,24 @@ func (s *StorageDatabase) Delete(namespace string, key string) *DbError {
 }
 
 func (s *StorageDatabase) DeleteAll(namespace string) *DbError {
-	err := os.RemoveAll(s.getNamespacePath(namespace))
+	contents, err := filepath.Glob(s.getNamespaceSubfolderPath(namespace))
 	if err != nil {
 		return &DbError{
 			ErrorCode: FILESYSTEM_ERROR,
 			Message:   err.Error(),
 		}
 	}
-
-	return nil
-}
-
-func (s *StorageDatabase) GetNamespaces() []string {
-	results := make([]string, 0)
-
-	namespaces, err := os.ReadDir(s.RootDirPath)
-	if err != nil {
-		log.Println(err)
-		return results
-	}
-
-	for _, ns := range namespaces {
-		if ns.IsDir() {
-			results = append(results, ns.Name())
+	for _, item := range contents {
+		err = os.RemoveAll(item)
+		if err != nil {
+			return &DbError{
+				ErrorCode: FILESYSTEM_ERROR,
+				Message:   err.Error(),
+			}
 		}
 	}
-	return results
+
+	return nil
 }
 
 func (s *StorageDatabase) ensureNamespace(namespace string) error {
@@ -161,4 +182,8 @@ func (s *StorageDatabase) getFilePath(namespace, key string) string {
 
 func (s *StorageDatabase) getNamespacePath(namespace string) string {
 	return filepath.Join(s.RootDirPath, namespace)
+}
+
+func (s *StorageDatabase) getNamespaceSubfolderPath(namespace string) string {
+	return filepath.Join(s.RootDirPath, namespace, "*")
 }

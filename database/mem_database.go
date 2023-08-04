@@ -28,6 +28,22 @@ func (m *MemDatabase) Disconnect() {
 	// Do nothing
 }
 
+func (m *MemDatabase) GetNamespaces() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	ret := make([]string, 0)
+	for k := range m.namespaces {
+		ret = append(ret, k)
+	}
+	return ret
+}
+
+func (m *MemDatabase) DropNameSpace(namespace string) *DbError {
+	// Do nothing
+	return nil
+}
+
 func (m *MemDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -121,15 +137,4 @@ func (m *MemDatabase) DeleteAll(namespace string) *DbError {
 	}
 	delete(m.namespaces, namespace)
 	return nil
-}
-
-func (m *MemDatabase) GetNamespaces() []string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	ret := make([]string, 0)
-	for k := range m.namespaces {
-		ret = append(ret, k)
-	}
-	return ret
 }

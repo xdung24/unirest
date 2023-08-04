@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	redis_namespace_prefix = "caffein_"
+	redis_namespace_prefix = "ur_"
 	redis_schema_suffix    = "_schema"
 	redis_dbTimeout        = 10 * time.Second
 )
@@ -47,6 +47,27 @@ func (r *RedisDatabase) Disconnect() {
 		panic(err)
 	}
 	log.Println("diconnected")
+}
+
+func (r *RedisDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
+	defer cancel()
+	var ret = []string{}
+	val, _, err := r.db.Scan(ctx, 0, redis_namespace_prefix+"*", 0).Result()
+	if err != nil {
+		return ret
+	}
+	for _, v := range val {
+		if !strings.HasSuffix(v, redis_schema_suffix) {
+			ret = append(ret, strings.Replace(v, redis_namespace_prefix, "", 1))
+		}
+	}
+	return ret
+}
+
+func (r *RedisDatabase) DropNameSpace(namespace string) *DbError {
+	// Do nothing
+	return nil
 }
 
 func (r *RedisDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
@@ -141,25 +162,9 @@ func (r *RedisDatabase) DeleteAll(namespace string) *DbError {
 		if err != nil {
 			return &DbError{
 				ErrorCode: INTERNAL_ERROR,
-				Message:   fmt.Sprintf("error on HDel: %v", err),
+				Message:   fmt.Sprintf("error on DeleteAll: %v", err),
 			}
 		}
 	}
 	return nil
-}
-
-func (r *RedisDatabase) GetNamespaces() []string {
-	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
-	defer cancel()
-	var ret = []string{}
-	val, _, err := r.db.Scan(ctx, 0, redis_namespace_prefix+"*", 0).Result()
-	if err != nil {
-		return ret
-	}
-	for _, v := range val {
-		if !strings.HasSuffix(v, redis_schema_suffix) {
-			ret = append(ret, strings.Replace(v, redis_namespace_prefix, "", 1))
-		}
-	}
-	return ret
 }

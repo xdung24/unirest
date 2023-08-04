@@ -11,14 +11,15 @@ import (
 )
 
 const (
+	mysql_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
+	mysql_dropNamespaceQuery  = "DROP TABLE %v"
 	mysql_insertQuery         = "INSERT INTO %v (id, data) VALUES(?, ?) ON DUPLICATE KEY UPDATE data = ?"
 	mysql_tablesQuery         = "SELECT table_name FROM information_schema.tables WHERE table_schema = '%v'"
 	mysql_recordExistentQuery = "SELECT COUNT(1) FROM %v WHERE id = ?"
 	mysql_getQuery            = "SELECT data FROM %v WHERE id = ?"
 	mysql_getAllQuery         = "SELECT id, data FROM %v ORDER BY id"
 	mysql_deleteQuery         = "DELETE FROM %v WHERE id = ?"
-	mysql_dropNamespaceQuery  = "DROP TABLE %v"
-	mysql_createTableQuery    = "CREATE TABLE IF NOT EXISTS %v (id VARCHAR(14) NOT NULL, data json NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB;"
+	mysql_deleteAllQuery      = "TRUNCATE TABLE %v"
 	mysql_dbTimeout           = 10 * time.Second
 )
 
@@ -55,7 +56,34 @@ func (m *MySqlDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
-func (m MySqlDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
+func (m *MySqlDatabase) GetNamespaces() []string {
+	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
+	defer cancel()
+	sqlStatement := fmt.Sprintf(mysql_tablesQuery, m.Name)
+	rows, err := m.db.QueryContext(ctx, sqlStatement)
+	if err != nil {
+		log.Printf("error on GetNamespaces: %v\n", err)
+	}
+	defer rows.Close()
+
+	ret := make([]string, 0)
+	for rows.Next() {
+		var tableName string
+		err = rows.Scan(&tableName)
+		if err != nil {
+			log.Println(sqlStatement)
+			log.Printf("error on Scan: %v\n", err)
+		}
+		ret = append(ret, tableName)
+	}
+	return ret
+}
+
+func (m *MySqlDatabase) DropNameSpace(namespace string) *DbError {
+	return nil
+}
+
+func (m *MySqlDatabase) Upsert(namespace string, key string, value []byte, allowOverWrite bool) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	err := m.ensureNamespace(namespace)
@@ -95,7 +123,7 @@ func (m MySqlDatabase) Upsert(namespace string, key string, value []byte, allowO
 	return nil
 }
 
-func (m MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
+func (m *MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	rows, dbErr := m.db.QueryContext(ctx, fmt.Sprintf(mysql_getQuery, namespace), key)
@@ -123,7 +151,7 @@ func (m MySqlDatabase) Get(namespace string, key string) ([]byte, *DbError) {
 	}
 }
 
-func (m MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
+func (m *MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_getAllQuery, namespace)
@@ -152,7 +180,7 @@ func (m MySqlDatabase) GetAll(namespace string) (map[string][]byte, *DbError) {
 	return ret, nil
 }
 
-func (m MySqlDatabase) Delete(namespace string, key string) *DbError {
+func (m *MySqlDatabase) Delete(namespace string, key string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	sqlStatement := fmt.Sprintf(mysql_deleteQuery, namespace)
@@ -168,10 +196,10 @@ func (m MySqlDatabase) Delete(namespace string, key string) *DbError {
 	return nil
 }
 
-func (m MySqlDatabase) DeleteAll(namespace string) *DbError {
+func (m *MySqlDatabase) DeleteAll(namespace string) *DbError {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
-	sqlStatement := fmt.Sprintf(mysql_dropNamespaceQuery, namespace)
+	sqlStatement := fmt.Sprintf(mysql_deleteAllQuery, namespace)
 	_, err := m.db.ExecContext(ctx, sqlStatement)
 	if err != nil {
 		log.Println(sqlStatement)
@@ -184,30 +212,7 @@ func (m MySqlDatabase) DeleteAll(namespace string) *DbError {
 	return nil
 }
 
-func (m MySqlDatabase) GetNamespaces() []string {
-	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
-	defer cancel()
-	sqlStatement := fmt.Sprintf(mysql_tablesQuery, m.Name)
-	rows, err := m.db.QueryContext(ctx, sqlStatement)
-	if err != nil {
-		log.Printf("error on GetNamespaces: %v\n", err)
-	}
-	defer rows.Close()
-
-	ret := make([]string, 0)
-	for rows.Next() {
-		var tableName string
-		err = rows.Scan(&tableName)
-		if err != nil {
-			log.Println(sqlStatement)
-			log.Printf("error on Scan: %v\n", err)
-		}
-		ret = append(ret, tableName)
-	}
-	return ret
-}
-
-func (m MySqlDatabase) ensureNamespace(namespace string) (err error) {
+func (m *MySqlDatabase) ensureNamespace(namespace string) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()
 	query := fmt.Sprintf(mysql_createTableQuery, namespace)

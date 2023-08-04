@@ -8,7 +8,57 @@ import (
 	"github.com/xdung24/universal-rest/database"
 )
 
-func (s *Server) keyValueHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) dataSetHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	if r.Method == http.MethodOptions {
+		return
+	}
+
+	userId := r.Header.Get(USER_HEADER)
+
+	vars := mux.Vars(r)
+	namespace := vars["namespace"]
+
+	switch r.Method {
+	case http.MethodGet:
+		data, dbErr := s.db.GetAll(namespace)
+		if dbErr != nil {
+			switch dbErr.ErrorCode {
+			case database.NAMESPACE_NOT_FOUND:
+				respondWithError(w, http.StatusBadRequest, dbErr.Error())
+			default:
+				respondWithError(w, http.StatusInternalServerError, dbErr.Error())
+			}
+		}
+		namespaceData, err := jsonWrapper(data)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		respondWithJSON(w, http.StatusOK, string(namespaceData))
+	case http.MethodDelete:
+		dbErr := s.db.DeleteAll(namespace)
+		if dbErr != nil {
+			switch dbErr.ErrorCode {
+			case database.NAMESPACE_NOT_FOUND:
+				respondWithError(w, http.StatusBadRequest, dbErr.Error())
+			default:
+				respondWithError(w, http.StatusInternalServerError, dbErr.Error())
+			}
+		}
+		s.Notify(BrokerEvent{
+			Event:     EVENT_NAMESPACE_DELETED,
+			User:      userId,
+			Namespace: namespace,
+			Key:       "",
+			Value:     nil,
+		})
+		respondWithJSON(w, http.StatusAccepted, "{}")
+	}
+}
+
+func (s *Server) dataSetKeyValueHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	if r.Method == http.MethodOptions {
@@ -111,7 +161,7 @@ func _onUpsert(s *Server, w http.ResponseWriter, method, userId, namespace, key 
 		return
 	}
 
-	event := EVENT_ITEM_ADDED
+	event := EVENT_ITEM_CREATED
 	if method == http.MethodPut {
 		event = EVENT_ITEM_UPDATED
 	}
