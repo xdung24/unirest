@@ -55,6 +55,18 @@ func (p *PGDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (p *PGDatabase) CreateNameSpace(namespace string) *DbError {
+	err := p.ensureNamespace(namespace)
+	if err != nil {
+		return &DbError{
+			ErrorCode: NAMESPACE_NOT_FOUND,
+			Message:   fmt.Sprintf("could not create namespace %v", namespace),
+		}
+	}
+
+	return nil
+}
+
 func (p *PGDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()

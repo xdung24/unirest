@@ -56,6 +56,17 @@ func (m *MySqlDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (m *MySqlDatabase) CreateNameSpace(namespace string) *DbError {
+	err := m.ensureNamespace(namespace)
+	if err != nil {
+		return &DbError{
+			ErrorCode: NAMESPACE_NOT_FOUND,
+			Message:   fmt.Sprintf("could not create namespace %v", namespace),
+		}
+	}
+	return nil
+}
+
 func (m *MySqlDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), mysql_dbTimeout)
 	defer cancel()

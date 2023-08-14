@@ -30,7 +30,18 @@ func (s *Server) namespaceHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodPost:
-		respondWithError(w, http.StatusNotImplemented, "cannot POST to this endpoint!")
+		dbErr := s.db.CreateNameSpace(namespace)
+		if dbErr != nil {
+			respondWithError(w, http.StatusInternalServerError, dbErr.Error())
+		}
+		s.Notify(BrokerEvent{
+			Event:     EVENT_NAMESPACE_CREATED,
+			User:      userId,
+			Namespace: namespace,
+			Key:       "",
+			Value:     nil,
+		})
+		respondWithJSON(w, http.StatusCreated, "{}")
 	case http.MethodGet:
 		data, dbErr := s.db.GetAll(namespace)
 		if dbErr != nil {

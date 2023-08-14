@@ -49,6 +49,11 @@ func (r *RedisDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (r *RedisDatabase) CreateNameSpace(namespace string) *DbError {
+	// do nothing
+	return nil
+}
+
 func (r *RedisDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), redis_dbTimeout)
 	defer cancel()

@@ -17,6 +17,7 @@ import (
 type Database interface {
 	Init()
 	Disconnect()
+	CreateNameSpace(namespace string) *database.DbError
 	GetNamespaces() []string
 	DropNameSpace(namespace string) *database.DbError
 	Upsert(namespace string, key string, value []byte, allowOverWrite bool) *database.DbError

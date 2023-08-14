@@ -28,6 +28,11 @@ func (m *MemDatabase) Disconnect() {
 	// Do nothing
 }
 
+func (m *MemDatabase) CreateNameSpace(namespace string) *DbError {
+	// Do nothing
+	return nil
+}
+
 func (m *MemDatabase) GetNamespaces() []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()

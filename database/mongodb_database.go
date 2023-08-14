@@ -57,6 +57,17 @@ func (m *MongoDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (m *MongoDatabase) CreateNameSpace(namespace string) *DbError {
+	err := m.ensureNamespace(namespace)
+	if err != nil {
+		return &DbError{
+			ErrorCode: NAMESPACE_NOT_FOUND,
+			Message:   fmt.Sprintf("could not create namespace %v", namespace),
+		}
+	}
+	return nil
+}
+
 func (m *MongoDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
 	defer cancel()

@@ -43,6 +43,18 @@ func (s *SQLiteDatabase) Disconnect() {
 	log.Println("diconnected")
 }
 
+func (s *SQLiteDatabase) CreateNameSpace(namespace string) *DbError {
+	err := s.ensureNamespace(namespace)
+	if err != nil {
+		return &DbError{
+			ErrorCode: NAMESPACE_NOT_FOUND,
+			Message:   fmt.Sprintf("could not create namspace %v", namespace),
+		}
+	}
+
+	return nil
+}
+
 func (p *SQLiteDatabase) GetNamespaces() []string {
 	ctx, cancel := context.WithTimeout(context.Background(), pg_dbTimeout)
 	defer cancel()

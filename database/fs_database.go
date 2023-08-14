@@ -24,6 +24,18 @@ func (s *StorageDatabase) Disconnect() {
 	// do nothing
 }
 
+func (s *StorageDatabase) CreateNameSpace(namespace string) *DbError {
+	err := s.ensureNamespace(namespace)
+	if err != nil {
+		return &DbError{
+			ErrorCode: FILESYSTEM_ERROR,
+			Message:   err.Error(),
+		}
+	}
+
+	return nil
+}
+
 func (s *StorageDatabase) GetNamespaces() []string {
 	results := make([]string, 0)
 
