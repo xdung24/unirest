@@ -1,5 +1,3 @@
-# caffeine - minimum viable backend
-
 A very basic REST service for JSON data - enough for prototyping and MVPs!
 
 **Features**:
