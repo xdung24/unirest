@@ -1,5 +1,6 @@
 run*
 universal-rest
+*.exe
 .idea
 /certs/*
 /data/*
