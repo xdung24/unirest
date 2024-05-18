@@ -1,6 +1,7 @@
 package service
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/r3labs/sse/v2"
 	"github.com/xeipuuv/gojsonschema"
@@ -60,6 +62,7 @@ var (
 
 type Server struct {
 	Address        string
+	BrokerAddress  string
 	SwaggerEnabled bool
 	BrokerEnabled  bool
 	AuthEnabled    bool
@@ -105,8 +108,8 @@ func (s *Server) Init(db Database) {
 		sseServer.EventTTL = time.Second * 15 // keep message alive for 15 seconds, so the client can reconnect
 
 		sseServer.CreateStream("messages")
-		mux := http.NewServeMux()
-		mux.HandleFunc(BrokerPattern, func(w http.ResponseWriter, r *http.Request) {
+		brokerServer := http.NewServeMux()
+		brokerServer.HandleFunc(BrokerPattern, func(w http.ResponseWriter, r *http.Request) {
 			go func() {
 				// Received Browser Disconnection
 				<-r.Context().Done()
@@ -115,7 +118,12 @@ func (s *Server) Init(db Database) {
 			sseServer.ServeHTTP(w, r)
 		})
 		s.broker = sseServer
-		s.router.PathPrefix(BrokerPattern).Handler(mux)
+
+		go func() {
+			log.Println("broker server started at: " + s.BrokerAddress)
+			http.ListenAndServe(s.BrokerAddress, sseServer)
+		}()
+
 		log.Println("broker extension enabled")
 	}
 
@@ -134,8 +142,8 @@ func (s *Server) Init(db Database) {
 	}
 
 	srv := &http.Server{
-		// Handler:      handlers.CompressHandlerLevel(s.router, gzip.BestSpeed),
-		Handler:      s.router,
+		Handler: handlers.CompressHandlerLevel(s.router, gzip.BestSpeed),
+		// Handler:      s.router,
 		Addr:         s.Address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

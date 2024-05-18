@@ -29,17 +29,19 @@ const (
 	envDbUser         = "DB_USER"
 	envDbPass         = "DB_PASS"
 	envDbPath         = "DB_PATH"
-	envSwaggerEnabled = "SWAGGER_ENABLED"
 	envBrokerEnabled  = "BROKER_ENABLED"
+	envBrokerHostPort = "BROKER_IP_PORT"
+	envSwaggerEnabled = "SWAGGER_ENABLED"
 	envAuthEnabled    = "AUTH_ENABLED"
 	envRawSqlEnabled  = "RAW_SQL_ENABLED"
 )
 
 func main() {
-	var addr, dbDriver, dbHost, dbName, dbUser, dbPass, dbPath string
+	var addr, dbDriver, dbHost, dbName, dbUser, dbPass, dbPath, brokerHostPort string
 	var swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
 
-	flag.StringVar(&addr, envHostPort, "0.0.0.0:8000", "ip:port to expose")
+	flag.StringVar(&addr, envHostPort, "0.0.0.0:8000", "ip:port for rest api to expose")
+	flag.StringVar(&brokerHostPort, envBrokerHostPort, "0.0.0.0:8001", "ip:port for broker to expose")
 
 	flag.BoolVar(&swaggerEnabled, envSwaggerEnabled, false, "enable swagger")
 	flag.BoolVar(&brokerEnabled, envBrokerEnabled, false, "enable broker")
@@ -57,6 +59,7 @@ func main() {
 
 	server := service.Server{
 		Address:        addr,
+		BrokerAddress:  brokerHostPort,
 		SwaggerEnabled: swaggerEnabled,
 		BrokerEnabled:  brokerEnabled,
 		AuthEnabled:    authEnabled,
@@ -115,5 +118,5 @@ func main() {
 
 	db.Disconnect()
 
-	log.Println("bye")
+	log.Println("Good bye")
 }
