@@ -5,3 +5,4 @@ universal-rest
 /certs/*
 /data/*
 /test/*
+universal-rest.conf
