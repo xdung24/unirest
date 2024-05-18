@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/r3labs/sse/v2"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/xdung24/universal-rest/database"
@@ -65,8 +66,16 @@ type Server struct {
 	RawSqlEnabled  bool
 
 	router *mux.Router
-	broker *Broker
+	broker *sse.Server
 	db     Database
+}
+
+type BrokerEvent struct {
+	Event     string      `json:"event"`
+	User      string      `json:"user_id,omitempty"`
+	Namespace string      `json:"namespace"`
+	Key       string      `json:"key,omitempty"`
+	Value     interface{} `json:"value,omitempty"`
 }
 
 func (s *Server) Init(db Database) {
@@ -92,8 +101,21 @@ func (s *Server) Init(db Database) {
 	}
 
 	if s.BrokerEnabled {
-		s.broker = NewServer()
-		s.router.Handle(BrokerPattern, s.broker)
+		sseServer := sse.New()
+		sseServer.EventTTL = time.Second * 15 // keep message alive for 15 seconds, so the client can reconnect
+
+		sseServer.CreateStream("messages")
+		mux := http.NewServeMux()
+		mux.HandleFunc(BrokerPattern, func(w http.ResponseWriter, r *http.Request) {
+			go func() {
+				// Received Browser Disconnection
+				<-r.Context().Done()
+			}()
+
+			sseServer.ServeHTTP(w, r)
+		})
+		s.broker = sseServer
+		s.router.PathPrefix(BrokerPattern).Handler(mux)
 		log.Println("broker extension enabled")
 	}
 
@@ -161,6 +183,8 @@ func (s *Server) validate(namespace string, data []byte) (interface{}, error) {
 func (s *Server) Notify(event BrokerEvent) {
 	if s.broker != nil {
 		jsonData, _ := json.Marshal(event)
-		s.broker.Notifier <- jsonData
+		s.broker.Publish("messages", &sse.Event{
+			Data: []byte(jsonData),
+		})
 	}
 }
