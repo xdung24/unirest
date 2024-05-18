@@ -22,3 +22,11 @@ And the full chain certs is there: /root/.acme.sh/lxd.ddns.net_ecc/fullchain.cer
 - update /etc/nginx/sites-enabled/universal-rest.conf
 - sudo systemctl reload nginx
 - sudo systemctl restart nginx.service
+
+
+## steps to generate a new cert
+
+acme.sh --install-cert -d lxd.ddns.net \
+--key-file       /root/.acme.sh/lxd.ddns.net_ecc/lxd.ddns.net.key  \
+--fullchain-file /root/.acme.sh/lxd.ddns.net_ecc/lxd.ddns.net.fullchain.cer \
+--reloadcmd     "service nginx force-reload"
