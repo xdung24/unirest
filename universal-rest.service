@@ -8,9 +8,6 @@ ExecStart=/usr/local/bin/universal-rest
 EnvironmentFile=/etc/universal-rest.conf
 Restart=always
 RestartSec=3
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=mygoapp
 
 [Install]
 WantedBy=multi-user.target
