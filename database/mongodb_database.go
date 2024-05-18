@@ -30,7 +30,7 @@ func (m *MongoDatabase) Init() {
 	ctx, cancel := context.WithTimeout(context.Background(), mongo_dbTimeout)
 	defer cancel()
 
-	uri := fmt.Sprintf("mongodb://%v/?directConnection=true&serverSelectionTimeoutMS=2000", m.Host)
+	uri := fmt.Sprintf("mongodb+srv://%v:%v@%v/?directConnection=true&serverSelectionTimeoutMS=2000", m.User, m.Pass, m.Host)
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	if err != nil {
