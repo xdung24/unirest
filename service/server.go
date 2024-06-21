@@ -33,11 +33,11 @@ type Database interface {
 
 const (
 	NamespaceHomePattern   = "/namespace"
-	NamespacePattern       = "/namespace/{namespace:[a-zA-Z0-9]+}"
-	DataSetPattern         = "/dataset/{namespace:[a-zA-Z0-9]+}"
-	DataSetKeyValuePattern = "/dataset/{namespace:[a-zA-Z0-9]+}/{key:[a-zA-Z0-9]+}"
-	SearchPattern          = "/search/{namespace:[a-zA-Z0-9]+}"
-	SchemaPattern          = "/schema/{namespace:[a-zA-Z0-9]+}"
+	NamespacePattern       = "/namespace/{namespace:[a-zA-Z0-9\\-]+}"
+	DataSetPattern         = "/dataset/{namespace:[a-zA-Z0-9\\-]+}"
+	DataSetKeyValuePattern = "/dataset/{namespace:[a-zA-Z0-9\\-]+}/{key:[a-zA-Z0-9\\-]+}"
+	SearchPattern          = "/search/{namespace:[a-zA-Z0-9\\-]+}"
+	SchemaPattern          = "/schema/{namespace:[a-zA-Z0-9\\-]+}"
 	OpenAPIPattern         = "/{openapi|swagger}.json"
 	BrokerPattern          = "/broker"
 	SwaggerUIPattern       = "/swaggerui/"
