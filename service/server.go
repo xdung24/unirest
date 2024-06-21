@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -110,9 +111,20 @@ func (s *Server) Init(db Database) {
 		sseServer.CreateStream("messages")
 		brokerServer := http.NewServeMux()
 		brokerServer.HandleFunc(BrokerPattern, func(w http.ResponseWriter, r *http.Request) {
+			// Send a heartbeat every 30 seconds to keep the connection alive
+			ticker := time.NewTicker(30 * time.Second)
 			go func() {
-				// Received Browser Disconnection
-				<-r.Context().Done()
+				for {
+					select {
+					case <-ticker.C:
+						// Send a comment as a heartbeat, clients will ignore this
+						fmt.Fprintf(w, ":heartbeat\n\n")
+						w.(http.Flusher).Flush()
+					case <-r.Context().Done():
+						ticker.Stop()
+						return
+					}
+				}
 			}()
 
 			sseServer.ServeHTTP(w, r)
