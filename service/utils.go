@@ -47,6 +47,7 @@ func jsonWrapper(payload interface{}) (content []byte, err error) {
 		if err != nil {
 			return
 		}
+		parsed.(map[string]interface{})["id"] = k // Add the key-value pair
 		r = append(r, map[string]interface{}{"key": k, "value": parsed})
 	}
 	// ensure the ascending order
@@ -64,12 +65,13 @@ func jsonWrapper2(payload interface{}) (content []byte, err error) {
 		return
 	}
 	r := make([]interface{}, 0)
-	for _, v := range unboxed {
+	for k, v := range unboxed {
 		var parsed interface{}
 		err = json.Unmarshal(v, &parsed)
 		if err != nil {
 			return
 		}
+		parsed.(map[string]interface{})["id"] = k // Add the key-value pair
 		r = append(r, parsed)
 	}
 	content, err = json.Marshal(r)
@@ -87,12 +89,13 @@ func jsonWrapper3(payload interface{}) (content []byte, err error) {
 		return
 	}
 	r := make([]interface{}, 0)
-	for _, v := range unboxed {
+	for k, v := range unboxed {
 		var parsed interface{}
 		err = json.Unmarshal(v, &parsed)
 		if err != nil {
 			return
 		}
+		parsed.(map[string]interface{})["id"] = k // Add the key-value pair
 		r = append(r, parsed)
 	}
 	content, err = json.Marshal(result{Results: r})
