@@ -31,8 +31,8 @@ func (s *Server) dataSetHandler(w http.ResponseWriter, r *http.Request) {
 				respondWithError(w, http.StatusInternalServerError, dbErr.Error())
 			}
 		}
-		q := r.URL.Query().Get("q")
-		switch q {
+		format := r.URL.Query().Get("format")
+		switch format {
 		case "", "1":
 			namespaceData, err := jsonWrapper(data)
 			if err != nil {
