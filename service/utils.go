@@ -56,3 +56,45 @@ func jsonWrapper(payload interface{}) (content []byte, err error) {
 	content, err = json.Marshal(r)
 	return
 }
+
+func jsonWrapper2(payload interface{}) (content []byte, err error) {
+	unboxed, ok := payload.(map[string][]byte)
+	if !ok {
+		content, err = json.Marshal(payload)
+		return
+	}
+	r := make([]interface{}, 0)
+	for _, v := range unboxed {
+		var parsed interface{}
+		err = json.Unmarshal(v, &parsed)
+		if err != nil {
+			return
+		}
+		r = append(r, parsed)
+	}
+	content, err = json.Marshal(r)
+	return
+}
+
+type result struct {
+	Results []interface{} `json:"results"`
+}
+
+func jsonWrapper3(payload interface{}) (content []byte, err error) {
+	unboxed, ok := payload.(map[string][]byte)
+	if !ok {
+		content, err = json.Marshal(payload)
+		return
+	}
+	r := make([]interface{}, 0)
+	for _, v := range unboxed {
+		var parsed interface{}
+		err = json.Unmarshal(v, &parsed)
+		if err != nil {
+			return
+		}
+		r = append(r, parsed)
+	}
+	content, err = json.Marshal(result{Results: r})
+	return
+}

@@ -31,12 +31,33 @@ func (s *Server) dataSetHandler(w http.ResponseWriter, r *http.Request) {
 				respondWithError(w, http.StatusInternalServerError, dbErr.Error())
 			}
 		}
-		namespaceData, err := jsonWrapper(data)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
-			return
+		q := r.URL.Query().Get("q")
+		switch q {
+		case "", "1":
+			namespaceData, err := jsonWrapper(data)
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			respondWithJSON(w, http.StatusOK, string(namespaceData))
+		case "2":
+			namespaceData, err := jsonWrapper2(data)
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			respondWithJSON(w, http.StatusOK, string(namespaceData))
+		case "3":
+			namespaceData, err := jsonWrapper3(data)
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			respondWithJSON(w, http.StatusOK, string(namespaceData))
+		default:
+			respondWithError(w, 400, "Invalid query")
 		}
-		respondWithJSON(w, http.StatusOK, string(namespaceData))
+
 	case http.MethodDelete:
 		dbErr := s.db.DeleteAll(namespace)
 		if dbErr != nil {
