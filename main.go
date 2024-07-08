@@ -37,6 +37,8 @@ const (
 )
 
 func main() {
+	printInfo()
+
 	var addr, dbDriver, dbHost, dbName, dbUser, dbPass, dbPath, brokerHostPort string
 	var swaggerEnabled, brokerEnabled, authEnabled, rawSqlEnabled bool
 
