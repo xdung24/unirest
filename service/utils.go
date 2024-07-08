@@ -78,10 +78,6 @@ func jsonWrapper2(payload interface{}) (content []byte, err error) {
 	return
 }
 
-type result struct {
-	Results []interface{} `json:"results"`
-}
-
 func jsonWrapper3(payload interface{}) (content []byte, err error) {
 	unboxed, ok := payload.(map[string][]byte)
 	if !ok {
@@ -98,6 +94,11 @@ func jsonWrapper3(payload interface{}) (content []byte, err error) {
 		parsed.(map[string]interface{})["id"] = k // Add the key-value pair
 		r = append(r, parsed)
 	}
-	content, err = json.Marshal(result{Results: r})
+	result := struct {
+		Results []interface{} `json:"results"`
+	}{
+		Results: r,
+	}
+	content, err = json.Marshal(result)
 	return
 }
