@@ -14,9 +14,9 @@ And the full chain certs is there: /root/.acme.sh/lxd.ddns.net_ecc/fullchain.cer
 
 - git pull
 - go build
-- copy binary to /usr/local/bin/universal-rest
-- copy config file to /etc/universal-rest.conf
-- copy service file to /etc/systemd/system/universal-rest.service
+- copy binary to sudo mv /tmp/main.exe /usr/local/bin/universal-rest
+- copy config file to sudo cp universal-rest.conf /etc/universal-rest/config.conf
+- copy service file to sudo cp universal-rest-sample.conf /etc/systemd/system/universal-rest.service
 - sudo systemctl daemon-reload
 - sudo systemctl restart universal-rest.service
 - update /etc/nginx/sites-enabled/universal-rest.conf
