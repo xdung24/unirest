@@ -1,4 +1,4 @@
-FROM golang:1.22 as builder
+FROM golang:1.23 AS builder
 
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y make build-essential
 # Create and change to the app directory.
@@ -20,7 +20,7 @@ RUN mkdir -p ./tmp/ && make
 
 # Use the official Debian slim image for a production container.
 # https://hub.docker.com/_/debian
-FROM alpine:3.20.0 as production
+FROM alpine:3.20.0 AS production
 # Create a folder to store the universal-rest binary
 RUN mkdir -p /universal-rest
 

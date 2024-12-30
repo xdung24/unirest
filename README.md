@@ -21,25 +21,20 @@ A very basic REST service for JSON data - enough for prototyping and MVPs!
 **Currently supports**:
 
 - in memory database (map)
+- filesystem storage
 - sqlite
 - postgres
-- filesystem storage
-
+- mysql
+- mongodb
 
 ## How to
-
-Simply start the server with:
-
-```go {"id":"01HQ2WV4N8PPP7JG0DXTHNVR9A"}
-go run caffeine.go
-```
 
 optional params are:
 
 ```yaml {"id":"01HQ2WV4N8PPP7JG0DXVZHRZQJ"}
-Usage of caffeine:
+Usage:
   -AUTH_ENABLED=false: enable JWT auth
-  -DB_TYPE="memory": db type to use, options: memory | postgres | fs | sqlite
+  -DB_TYPE="memory": db type to use, options: memory | fs | sqlite | postgres | mysql | mongodb
   -DB_PATH="./data": path of the file storage root or sqlite database
   -IP_PORT=":8000": ip:port to expose
   -PG_HOST="0.0.0.0": postgres host (port is 5432)
@@ -227,28 +222,16 @@ Now only validated "users" will be accepted (see user.json and invalid_user.json
 
 ## Run as container
 
-```sh {"id":"01HQ2WV4N9YCG2C7Q9XR2F0F7W"}
-docker build -t caffeine .
-```
-
-and then run it:
-
-```sh {"id":"01HQ2WV4N9YCG2C7Q9XR9TT0W7"}
-docker run --publish 8000:8000 caffeine
-```
-
-## Run with Postgres
-
 First run an instance of Postgres (for example with docker):
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9XVVGSYYF"}
-docker run -e POSTGRES_USER=caffeine -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:latest
+docker run -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres:latest
 ```
 
-Then run caffeine with the right params to connect to the db:
+Then run with the right params to connect to the db:
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9XZ6YK09M"}
-DB_TYPE=postgres PG_HOST=0.0.0.0 PG_USER=caffeine PG_PASS=mysecretpassword go run caffeine.go
+DB_TYPE=postgres PG_HOST=0.0.0.0 PG_USER=postgres PG_PASS=mysecretpassword docker run --publish 8000:8000 xdung24/universal-rest:latest
 ```
 
 (params can be passed as ENV variables or as command-line ones)
