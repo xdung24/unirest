@@ -62,37 +62,37 @@ retrieve later with:
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WK7PFXGC"}
 # memory
-./universal-rest --DB_DRIVER=memory --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=memory --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WNDVFPY8"}
 # file system
-./universal-rest --DB_DRIVER=fs --DB_PATH=./data/ --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=fs --DB_PATH=./data/ --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WPDGK0MB"}
 # sqlite
-./universal-rest --DB_DRIVER=sqlite --DB_PATH=./data/db.sqlite --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=sqlite --DB_PATH=./data/db.sqlite --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WQ139BSK"}
 # redis
-./universal-rest --DB_DRIVER=redis --DB_HOST=localhost:6379 --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=redis --DB_HOST=localhost:6379 --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WT3DQW4C"}
 # postgres
-./universal-rest --DB_DRIVER=postgres --DB_HOST=localhost:5432 --DB_NAME=nettruyen --DB_USER=postgres --DB_PASS=postgres --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=postgres --DB_HOST=localhost:5432 --DB_NAME=nettruyen --DB_USER=postgres --DB_PASS=postgres --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WWWMHP98"}
 # mysql/mariadb
-./universal-rest --DB_DRIVER=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=mysql --DB_HOST=localhost:3306 --DB_NAME=nettruyen --DB_USER=divawallet --DB_PASS=divawallet --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9WYHJ04WY"}
 # mongodb
-./universal-rest --DB_DRIVER=mongo --DB_HOST=localhost:27017 --DB_NAME=nettruyen --AUTH_ENABLED=true --BROKER_ENABLED=true
+./unirest --DB_DRIVER=mongo --DB_HOST=localhost:27017 --DB_NAME=nettruyen --AUTH_ENABLED=true --BROKER_ENABLED=true
 ```
 
 ## All operations
@@ -231,7 +231,7 @@ docker run -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=mysecretpassword -p 54
 Then run with the right params to connect to the db:
 
 ```sh {"id":"01HQ2WV4N9YCG2C7Q9XZ6YK09M"}
-DB_TYPE=postgres PG_HOST=0.0.0.0 PG_USER=postgres PG_PASS=mysecretpassword docker run --publish 8000:8000 xdung24/universal-rest:latest
+DB_TYPE=postgres PG_HOST=0.0.0.0 PG_USER=postgres PG_PASS=mysecretpassword docker run --publish 8000:8000 xdung24/unirest:latest
 ```
 
 (params can be passed as ENV variables or as command-line ones)

@@ -21,19 +21,19 @@ RUN mkdir -p ./tmp/ && make
 # Use the official Debian slim image for a production container.
 # https://hub.docker.com/_/debian
 FROM alpine:3.20.0 AS production
-# Create a folder to store the universal-rest binary
-RUN mkdir -p /universal-rest
+# Create a folder to store the unirest binary
+RUN mkdir -p /unirest
 
 RUN apk add --no-cache ca-certificates
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/tmp/main.exe /usr/local/bin/universal-rest
+COPY --from=builder /app/tmp/main.exe /usr/local/bin/unirest
 
 # Copy configuration
-COPY ./universal-rest-sample.conf /universal-rest/.env
+COPY ./unirest-sample.conf /unirest/.env
 
 # Set workdir
-WORKDIR /universal-rest
+WORKDIR /unirest
 
 # Set entrypoint
-ENTRYPOINT ["universal-rest"]	
+ENTRYPOINT ["/usr/local/bin/unirest"]	

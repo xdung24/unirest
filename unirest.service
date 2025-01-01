@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 User=orangepi
-ExecStart=/usr/local/bin/universal-rest
-EnvironmentFile=/etc/universal-rest/config.conf
+ExecStart=/usr/local/bin/unirest
+EnvironmentFile=/etc/unirest/config.conf
 Restart=always
 RestartSec=3
 

@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   database:
     image: postgres:latest
@@ -12,17 +11,13 @@ services:
       - mynet
     volumes:
       - data:/var/lib/postgresql/data1
-  caffeine:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  unirest:
+    image: xdung24/unirest:latest
     environment:
         DB_TYPE: postgres 
         PG_HOST: database 
         PG_USER: "caffeine"
         PG_PASS: "password"
-    depends_on:
-      - database
     networks:
       - mynet
     ports:

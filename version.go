@@ -16,7 +16,7 @@ var (
 )
 
 func printInfo() {
-	fmt.Printf("mock-servers %s (%s) \n", AppVersion, GitHash)
+	fmt.Printf("unirest %s (%s) \n", AppVersion, GitHash)
 	fmt.Printf("%s \n", GoVersion)
 	fmt.Printf("build time: %s \n", BuildTime)
 	fmt.Printf("gin: %s \n", GinVersion)

@@ -1,4 +1,4 @@
-module github.com/xdung24/universal-rest
+module github.com/xdung24/unirest
 
 go 1.23
 

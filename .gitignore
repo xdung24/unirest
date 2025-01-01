@@ -1,8 +1,8 @@
 run*
-universal-rest
+unirest
 *.exe
 .idea
 /certs/*
 /data/*
 /test/*
-universal-rest.conf
+unirest.conf

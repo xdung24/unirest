@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/xdung24/universal-rest/database"
-	"github.com/xdung24/universal-rest/service"
+	"github.com/xdung24/unirest/database"
+	"github.com/xdung24/unirest/service"
 )
 
 func main() {

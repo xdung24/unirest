@@ -1,6 +1,6 @@
 package service
 
-import "github.com/xdung24/universal-rest/database"
+import "github.com/xdung24/unirest/database"
 
 type Database interface {
 	Init()

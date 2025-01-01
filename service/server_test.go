@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/gorilla/mux"
 
-	"github.com/xdung24/universal-rest/database"
+	"github.com/xdung24/unirest/database"
 )
 
 type testCase struct {
