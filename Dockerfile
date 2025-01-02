@@ -1,6 +1,6 @@
 FROM golang:1.23 AS builder
 
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y make build-essential
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y build-essential
 # Create and change to the app directory.
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary.
-RUN mkdir -p ./tmp/ && make
+RUN mkdir -p ./tmp/ && sh build.sh && ls -lah /app/tmp
 
 # Use the official Debian slim image for a production container.
 # https://hub.docker.com/_/debian
@@ -27,7 +27,7 @@ RUN mkdir -p /unirest
 RUN apk add --no-cache ca-certificates
 
 # Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/tmp/main.exe /usr/local/bin/unirest
+COPY --from=builder /app/tmp/unirest.exe /usr/local/bin/unirest
 
 # Copy configuration
 COPY ./unirest-sample.conf /unirest/.env

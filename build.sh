@@ -18,5 +18,5 @@ echo "GORILLA_VERSION: $GORILLA_VERSION"
 
 GO_VERSION_SANITIZED=$(echo "$GO_VERSION" | awk '{print $3 "_" $4}')
 
-ldflags="-X main.GoOs=$GO_OS -X main.GoArch=$GO_ARCH -X main.GoVersion=$GO_VERSION_SANITIZED -X main.AppVersion=$APP_VERSION -X main.GitHash=$GIT_HASH -X main.BuildTime=$BUILDTIME -X main.GinVersion=$GIN_VERSION -X main.GorillaVersion=$GORILLA_VERSION -X main.EchoVersion=$ECHO_VERSION -X main.FiberVersion=$FIBER_VERSION"
-go build -o ./tmp/main.exe -x --ldflags="$ldflags"
+ldflags="-X main.GoOs=$GO_OS -X main.GoArch=$GO_ARCH -X main.GoVersion=$GO_VERSION_SANITIZED -X main.AppVersion=$APP_VERSION -X main.GitHash=$GIT_HASH -X main.BuildTime=$BUILD_TIME -X main.GinVersion=$GIN_VERSION -X main.GorillaVersion=$GORILLA_VERSION -X main.EchoVersion=$ECHO_VERSION -X main.FiberVersion=$FIBER_VERSION"
+go build -o ./tmp/unirest.exe -x --ldflags="$ldflags"
