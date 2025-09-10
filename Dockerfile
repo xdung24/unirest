@@ -1,4 +1,4 @@
-FROM golang:1.23 AS builder
+FROM golang:1.25 AS builder
 
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y build-essential
 # Create and change to the app directory.
