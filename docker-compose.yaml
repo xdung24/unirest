@@ -16,8 +16,8 @@ services:
     environment:
         DB_TYPE: postgres 
         PG_HOST: database 
-        PG_USER: "caffeine"
-        PG_PASS: "password"
+        PG_USER: "unirest"
+        PG_PASS: "SecureP@ssw0rd"
     networks:
       - mynet
     ports:

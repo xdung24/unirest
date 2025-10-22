@@ -1,6 +1,6 @@
 module github.com/xdung24/unirest
 
-go 1.25
+go 1.25.3
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
